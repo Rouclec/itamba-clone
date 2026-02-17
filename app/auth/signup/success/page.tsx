@@ -37,7 +37,7 @@ export default function SuccessPage() {
           <h1 className="text-xl font-semibold text-center text-primary">
             Account Created
           </h1>
-          <p className="text-sm text-center text-muted-foreground leading-relaxed">
+          <p className="text-center text-inactive-text text-base font-medium leading-relaxed">
             Awesome! You are set to start browsing our library.
           </p>
         </div>

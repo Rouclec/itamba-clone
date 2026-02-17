@@ -11,6 +11,7 @@ import { emailSchema, type EmailFormData } from "@/lib/form-validators";
 import { mockSendEmailVerification } from "@/lib/mock-api";
 import { toast } from "sonner";
 import { z } from "zod";
+import Link from "next/link";
 
 export default function EmailSignupPage() {
   const router = useRouter();
@@ -80,11 +81,11 @@ export default function EmailSignupPage() {
     <SignupLayout currentStep={1} totalSteps={4} onBack={handleBack}>
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Header */}
-        <div className="space-y-3">
-          <h1 className="text-xl font-bold text-primary text-center">
+        <div>
+          <h1 className="text-xl font-semibold text-primary text-center">
             Sign up to Itamba
           </h1>
-          <p className="text-sm text-muted-foreground leading-relaxed">
+          <p className="text-center text-inactive-text text-base font-medium leading-relaxed">
             Sign Up to enjoy well organized and up to date Cameroon law
           </p>
         </div>
@@ -145,28 +146,36 @@ export default function EmailSignupPage() {
           Continue with Phone number
         </Button>
 
-        {/* Terms */}
-        <p className="text-xs text-muted-foreground text-center">
-          By proceeding, you agree to our{" "}
-          <a href="#" className="text-secondary hover:underline">
-            Terms
-          </a>{" "}
-          and{" "}
-          <a href="#" className="text-secondary hover:underline">
-            Privacy Policy
-          </a>
-        </p>
+        <div className="flex flex-col gap-4">
+          {/* Terms */}
+          <p className="text-base font-medium text-center leading-relaxed">
+            By proceeding, you agree to our{" "}
+            <Link
+              href="#"
+              className="text-secondary hover:underline font-medium"
+            >
+              Terms
+            </Link>{" "}
+            and{" "}
+            <Link
+              href="#"
+              className="text-secondary hover:underline font-medium"
+            >
+              Privacy Policy
+            </Link>
+          </p>
 
-        {/* Sign in link */}
-        <p className="text-xs text-muted-foreground text-center">
-          Already have an account?{" "}
-          <a
-            href="/auth/signin"
-            className="text-secondary hover:underline font-medium"
-          >
-            Sign in
-          </a>
-        </p>
+          {/* Sign in link */}
+          <p className="text-base font-medium text-center">
+            Already have an account?{" "}
+            <Link
+              href="/auth/signin"
+              className="text-secondary hover:underline font-medium"
+            >
+              Sign in
+            </Link>
+          </p>
+        </div>
       </form>
     </SignupLayout>
   );

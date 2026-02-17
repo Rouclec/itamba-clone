@@ -1,36 +1,36 @@
-'use client'
+"use client";
 
-import { useEffect, useState } from 'react'
-import { AlertCircle, CheckCircle2, Loader2 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { cn } from '@/lib/utils'
+import { useEffect, useState } from "react";
+import { AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 interface VerificationLoaderProps {
-  isLoading: boolean
-  isError?: boolean
-  errorMessage?: string
-  successMessage?: string
-  message: string
-  onRetry?: () => void
-  onBack?: () => void
+  isLoading: boolean;
+  isError?: boolean;
+  errorMessage?: string;
+  successMessage?: string;
+  message: string;
+  onRetry?: () => void;
+  onBack?: () => void;
 }
 
 export function VerificationLoader({
   isLoading,
   isError = false,
-  errorMessage = 'Verification failed. Please try again.',
-  successMessage = 'Verified successfully!',
+  errorMessage = "Verification failed. Please try again.",
+  successMessage = "Verified successfully!",
   message,
   onRetry,
   onBack,
 }: VerificationLoaderProps) {
-  const [displayError, setDisplayError] = useState(isError)
+  const [displayError, setDisplayError] = useState(isError);
 
   useEffect(() => {
     if (isError) {
-      setDisplayError(true)
+      setDisplayError(true);
     }
-  }, [isError])
+  }, [isError]);
 
   return (
     <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
@@ -50,10 +50,14 @@ export function VerificationLoader({
 
         {/* Message */}
         <div className="space-y-2 text-center">
-          <h2 className="text-xl font-semibold text-center text-primary">
-            {displayError ? 'Verification Failed' : isLoading ? 'Verifying...' : 'Verified!'}
+          <h2 className="text-xl font-bold text-center text-primary">
+            {displayError
+              ? "Verification Failed"
+              : isLoading
+                ? "Verifying..."
+                : "Verified!"}
           </h2>
-          <p className="text-sm text-center text-muted-foreground leading-relaxed">
+          <p className="text-center text-inactive-text text-base font-medium leading-relaxed">
             {displayError ? errorMessage : isLoading ? message : successMessage}
           </p>
         </div>
@@ -69,20 +73,12 @@ export function VerificationLoader({
         {displayError && (
           <div className="flex gap-3">
             {onRetry && (
-              <Button
-                onClick={onRetry}
-                variant="default"
-                className="flex-1"
-              >
+              <Button onClick={onRetry} variant="default" className="flex-1">
                 Try Again
               </Button>
             )}
             {onBack && (
-              <Button
-                onClick={onBack}
-                variant="outline"
-                className="flex-1"
-              >
+              <Button onClick={onBack} variant="outline" className="flex-1">
                 Return to Home
               </Button>
             )}
@@ -90,5 +86,5 @@ export function VerificationLoader({
         )}
       </div>
     </div>
-  )
+  );
 }

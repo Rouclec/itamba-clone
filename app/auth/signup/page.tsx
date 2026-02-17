@@ -83,11 +83,11 @@ export default function SignupPage() {
     <SignupLayout showProgress={true} showBackButton={true}>
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Header */}
-        <div className="space-y-3">
+        <div>
           <h1 className="text-xl font-bold text-primary text-center">
             Sign up to Itamba
           </h1>
-          <p className="text-sm text-muted-foreground leading-relaxed">
+          <p className="text-center text-inactive-text text-base font-medium leading-relaxed">
             Sign Up to enjoy well organized and up to date Cameroon law
           </p>
         </div>
@@ -151,28 +151,36 @@ export default function SignupPage() {
           Continue with Email
         </Button>
 
-        {/* Terms */}
-        <p className="text-xs text-muted-foreground text-center leading-relaxed">
-          By proceeding, you agree to our{" "}
-          <Link href="#" className="text-secondary hover:underline font-medium">
-            Terms
-          </Link>{" "}
-          and{" "}
-          <Link href="#" className="text-secondary hover:underline font-medium">
-            Privacy Policy
-          </Link>
-        </p>
+        <div className="flex flex-col gap-4">
+          {/* Terms */}
+          <p className="text-base font-medium text-center leading-relaxed">
+            By proceeding, you agree to our{" "}
+            <Link
+              href="#"
+              className="text-secondary hover:underline font-medium"
+            >
+              Terms
+            </Link>{" "}
+            and{" "}
+            <Link
+              href="#"
+              className="text-secondary hover:underline font-medium"
+            >
+              Privacy Policy
+            </Link>
+          </p>
 
-        {/* Sign in link */}
-        <p className="text-xs text-muted-foreground text-center">
-          Already have an account?{" "}
-          <Link
-            href="/auth/signin"
-            className="text-secondary hover:underline font-medium"
-          >
-            Sign in
-          </Link>
-        </p>
+          {/* Sign in link */}
+          <p className="text-base font-medium text-center">
+            Already have an account?{" "}
+            <Link
+              href="/auth/signin"
+              className="text-secondary hover:underline font-medium"
+            >
+              Sign in
+            </Link>
+          </p>
+        </div>
       </form>
     </SignupLayout>
   );

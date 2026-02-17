@@ -1,20 +1,20 @@
-'use client'
+"use client";
 
-import React, { useState, useRef, useEffect } from 'react'
-import { ChevronDown } from 'lucide-react'
-import { countries, defaultCountry, type Country } from '@/lib/countries'
+import React, { useState, useRef, useEffect } from "react";
+import { ChevronDown } from "lucide-react";
+import { countries, defaultCountry, type Country } from "@/lib/countries";
 
 interface PhoneInputProps {
-  value: string
-  onChange: (value: string) => void
-  onBlur?: () => void
-  onCountryChange?: (country: Country) => void
-  error?: string
-  placeholder?: string
-  required?: boolean
-  disabled?: boolean
+  value: string;
+  onChange: (value: string) => void;
+  onBlur?: () => void;
+  onCountryChange?: (country: Country) => void;
+  error?: string;
+  placeholder?: string;
+  required?: boolean;
+  disabled?: boolean;
   /** Initial country (e.g. from formData.phone). If not set, uses defaultCountry (Cameroon). */
-  defaultCountryCode?: string
+  defaultCountryCode?: string;
 }
 
 export function PhoneInput({
@@ -23,69 +23,75 @@ export function PhoneInput({
   onBlur,
   onCountryChange,
   error,
-  placeholder = '675 224 929',
+  placeholder = "675 224 929",
   required = false,
   disabled = false,
   defaultCountryCode,
 }: PhoneInputProps) {
-  const [isOpen, setIsOpen] = useState(false)
+  const [isOpen, setIsOpen] = useState(false);
   const [selectedCountry, setSelectedCountry] = useState<Country>(() => {
     if (defaultCountryCode) {
       const found = countries.find(
-        (c) => c.code === defaultCountryCode || c.dial_code === defaultCountryCode
-      )
-      if (found) return found
+        (c) =>
+          c.code === defaultCountryCode || c.dial_code === defaultCountryCode,
+      );
+      if (found) return found;
     }
-    return defaultCountry
-  })
-  const dropdownRef = useRef<HTMLDivElement>(null)
+    return defaultCountry;
+  });
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Close dropdown when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsOpen(false)
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsOpen(false);
       }
     }
     if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside)
-      return () => document.removeEventListener('mousedown', handleClickOutside)
+      document.addEventListener("mousedown", handleClickOutside);
+      return () =>
+        document.removeEventListener("mousedown", handleClickOutside);
     }
-  }, [isOpen])
+  }, [isOpen]);
 
   const handleCountrySelect = (country: Country) => {
-    setSelectedCountry(country)
-    setIsOpen(false)
-    onChange('')
-    onCountryChange?.(country)
-  }
+    setSelectedCountry(country);
+    setIsOpen(false);
+    onChange("");
+    onCountryChange?.(country);
+  };
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const input = e.target.value
-    const cleaned = input.replace(/\D/g, '')
-    onChange(cleaned)
-  }
+    const input = e.target.value;
+    const cleaned = input.replace(/\D/g, "");
+    onChange(cleaned);
+  };
 
   const formatPhoneDisplay = (digits: string) => {
-    if (!digits) return ''
-    if (digits.length <= 3) return digits
-    if (digits.length <= 6) return `${digits.slice(0, 3)} ${digits.slice(3)}`
-    return `${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6)}`
-  }
+    if (!digits) return "";
+    if (digits.length <= 3) return digits;
+    if (digits.length <= 6) return `${digits.slice(0, 3)} ${digits.slice(3)}`;
+    return `${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6)}`;
+  };
 
   return (
     <div className="space-y-2">
       <label className="text-sm font-medium text-foreground">
-        Phone number{required && ' *'}
+        Phone number
+        {required && <span className="text-destructive ml-1">*</span>}
       </label>
 
       <div
         className={`flex items-stretch h-[40px] border rounded-lg overflow-visible transition-colors border-(--input-border) ${
-          disabled ? 'bg-muted pointer-events-none opacity-90' : ''
+          disabled ? "bg-muted pointer-events-none opacity-90" : ""
         } ${
           error
-            ? 'border-destructive bg-red-50'
-            : 'bg-input hover:border-primary/50 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary'
+            ? "border-destructive bg-red-50"
+            : "bg-white hover:border-primary/50 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary"
         }`}
       >
         {/* Country Code Dropdown */}
@@ -106,7 +112,7 @@ export function PhoneInput({
               {selectedCountry.dial_code}
             </span>
             <ChevronDown
-              className={`w-4 h-4 text-muted-foreground transition-transform ${isOpen ? 'rotate-180' : ''}`}
+              className={`w-4 h-4 text-muted-foreground transition-transform ${isOpen ? "rotate-180" : ""}`}
             />
           </button>
 
@@ -124,7 +130,7 @@ export function PhoneInput({
                   role="option"
                   aria-selected={selectedCountry.code === country.code}
                   className={`w-full px-4 py-2.5 text-left hover:bg-muted/50 flex items-center gap-2 border-b border-border last:border-b-0 transition-colors ${
-                    selectedCountry.code === country.code ? 'bg-muted/30' : ''
+                    selectedCountry.code === country.code ? "bg-muted/30" : ""
                   }`}
                 >
                   <span className="text-lg shrink-0">{country.emoji}</span>
@@ -158,5 +164,5 @@ export function PhoneInput({
 
       {error && <p className="text-sm text-destructive">{error}</p>}
     </div>
-  )
+  );
 }

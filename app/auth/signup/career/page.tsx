@@ -60,14 +60,19 @@ export default function CareerPage() {
   };
 
   return (
-    <SignupLayout currentStep={4} totalSteps={4} onBack={handleBack}>
+    <SignupLayout
+      currentStep={4}
+      totalSteps={4}
+      onBack={handleBack}
+      backgroundImage="/assets/profession-bg.png"
+    >
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Header */}
         <div>
           <h2 className="text-xl font-semibold text-primary text-center">
             Who are you signing up as?
           </h2>
-          <p className="text-sm text-center text-muted-foreground leading-relaxed">
+          <p className="text-center text-inactive-text text-base font-medium leading-relaxed">
             Tell us your role, so we can personalized your experience.
           </p>
         </div>

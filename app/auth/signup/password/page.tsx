@@ -1,106 +1,110 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { SignupLayout } from '@/components/auth/signup-layout'
-import { FormInput } from '@/components/auth/form-input'
-import { Button } from '@/components/ui/button'
-import { useSignupContext } from '@/lib/signup-context'
-import { passwordSchema, type PasswordFormData } from '@/lib/form-validators'
-import { mockCreatePassword } from '@/lib/mock-api'
-import { toast } from 'sonner'
-import { z } from 'zod'
-import { Eye, EyeOff, Lock, LockOpen } from 'lucide-react'
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { SignupLayout } from "@/components/auth/signup-layout";
+import { FormInput } from "@/components/auth/form-input";
+import { Button } from "@/components/ui/button";
+import { useSignupContext } from "@/lib/signup-context";
+import { passwordSchema, type PasswordFormData } from "@/lib/form-validators";
+import { mockCreatePassword } from "@/lib/mock-api";
+import { toast } from "sonner";
+import { z } from "zod";
+import { Eye, EyeOff, Lock, LockOpen } from "lucide-react";
 
 export default function PasswordPage() {
-  const router = useRouter()
-  const { formData, updateFormData } = useSignupContext()
-  
-  const [password, setPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
-  const [showPassword, setShowPassword] = useState(false)
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
-  const [passwordError, setPasswordError] = useState<string | null>(null)
-  const [confirmError, setConfirmError] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
+  const router = useRouter();
+  const { formData, updateFormData } = useSignupContext();
+
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [confirmError, setConfirmError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   const validatePasswords = (pwd: string, confirm: string) => {
     try {
-      passwordSchema.parse({ password: pwd, confirmPassword: confirm })
-      setPasswordError(null)
-      setConfirmError(null)
-      return true
+      passwordSchema.parse({ password: pwd, confirmPassword: confirm });
+      setPasswordError(null);
+      setConfirmError(null);
+      return true;
     } catch (error) {
       if (error instanceof z.ZodError) {
         // Separate errors for each field
         error.errors.forEach((err) => {
-          if (err.path[0] === 'password') {
-            setPasswordError(err.message)
-          } else if (err.path[0] === 'confirmPassword') {
-            setConfirmError(err.message)
+          if (err.path[0] === "password") {
+            setPasswordError(err.message);
+          } else if (err.path[0] === "confirmPassword") {
+            setConfirmError(err.message);
           }
-        })
+        });
       }
-      return false
+      return false;
     }
-  }
+  };
 
   const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value
-    setPassword(value)
+    const value = e.target.value;
+    setPassword(value);
     if (passwordError) {
-      validatePasswords(value, confirmPassword)
+      validatePasswords(value, confirmPassword);
     }
-  }
+  };
 
-  const handleConfirmPasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value
-    setConfirmPassword(value)
+  const handleConfirmPasswordChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const value = e.target.value;
+    setConfirmPassword(value);
     if (confirmError) {
-      validatePasswords(password, value)
+      validatePasswords(password, value);
     }
-  }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    
+    e.preventDefault();
+
     if (!validatePasswords(password, confirmPassword)) {
-      return
+      return;
     }
 
-    setIsLoading(true)
+    setIsLoading(true);
     try {
-      const userId = formData.userId || 'temp_user'
-      const result = await mockCreatePassword(userId, password)
+      const userId = formData.userId || "temp_user";
+      const result = await mockCreatePassword(userId, password);
 
       if (result.success) {
-        updateFormData({ password })
-        toast.success(result.message)
+        updateFormData({ password });
+        toast.success(result.message);
 
         setTimeout(() => {
-          router.push('/auth/signup/career')
-        }, 500)
+          router.push("/auth/signup/career");
+        }, 500);
       } else {
-        toast.error(result.message)
+        toast.error(result.message);
       }
     } catch (error) {
-      toast.error('An error occurred. Please try again.')
+      toast.error("An error occurred. Please try again.");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const handleBack = () => {
-    router.back()
-  }
+    router.back();
+  };
 
-  const isFormValid = password && confirmPassword && !passwordError && !confirmError
+  const isFormValid =
+    password && confirmPassword && !passwordError && !confirmError;
 
   return (
     <SignupLayout
       currentStep={3}
       totalSteps={4}
       onBack={handleBack}
+      backgroundImage="/assets/password-bg.png"
     >
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Header */}
@@ -108,7 +112,7 @@ export default function PasswordPage() {
           <h2 className="text-xl font-semibold text-primary text-center">
             Create your password
           </h2>
-          <p className="text-sm text-center text-muted-foreground leading-relaxed">
+          <p className="text-center text-inactive-text text-base font-medium leading-relaxed">
             Secure your account with a strong password.
           </p>
         </div>
@@ -117,7 +121,7 @@ export default function PasswordPage() {
         <div className="relative">
           <FormInput
             label="Create password"
-            type={showPassword ? 'text' : 'password'}
+            type={showPassword ? "text" : "password"}
             placeholder="Eyong@456"
             value={password}
             onChange={handlePasswordChange}
@@ -142,7 +146,7 @@ export default function PasswordPage() {
         <div className="relative">
           <FormInput
             label="Confirm password"
-            type={showConfirmPassword ? 'text' : 'password'}
+            type={showConfirmPassword ? "text" : "password"}
             placeholder="Eyong@456"
             value={confirmPassword}
             onChange={handleConfirmPasswordChange}
@@ -180,8 +184,8 @@ export default function PasswordPage() {
           disabled={!isFormValid || isLoading}
           className={`w-full h-11 rounded-lg font-semibold text-white transition-all flex items-center justify-center gap-2 ${
             !isFormValid || isLoading
-              ? 'bg-slate-500 cursor-not-allowed'
-              : 'bg-primary hover:bg-primary/90 active:bg-primary/80'
+              ? "bg-slate-500 cursor-not-allowed"
+              : "bg-primary hover:bg-primary/90 active:bg-primary/80"
           }`}
         >
           {isLoading ? (
@@ -190,10 +194,10 @@ export default function PasswordPage() {
               <span>Creating...</span>
             </>
           ) : (
-            'Create password'
+            "Create password"
           )}
         </button>
       </form>
     </SignupLayout>
-  )
+  );
 }

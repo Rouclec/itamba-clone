@@ -50,7 +50,7 @@ export function RoleSelector({
             'py-1 px-2 h-auto transition-all border-0',
             value === role.id
               ? 'bg-primary text-primary-foreground hover:bg-primary/90 border-primary'
-              : 'bg-surface text-foreground border-border hover:border-primary hover:text-primary',
+              : 'bg-surface text-foreground border-border hover:bg-[#ECF2FF]',
           )}
         >
           <span className="text-sm font-medium">{role.label}</span>

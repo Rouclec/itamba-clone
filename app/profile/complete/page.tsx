@@ -1,103 +1,114 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { SignupLayout } from '@/components/auth/signup-layout'
-import { FormInput } from '@/components/auth/form-input'
-import { PhoneInput } from '@/components/auth/phone-input'
-import { Button } from '@/components/ui/button'
-import { useSignupContext } from '@/lib/signup-context'
-import { Loader2 } from 'lucide-react'
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { SignupLayout } from "@/components/auth/signup-layout";
+import { FormInput } from "@/components/auth/form-input";
+import { PhoneInput } from "@/components/auth/phone-input";
+import { Button } from "@/components/ui/button";
+import { useSignupContext } from "@/lib/signup-context";
+import { Loader2 } from "lucide-react";
 
-function parseStoredPhone(phone: string | undefined): { dialCode: string; national: string } {
-  if (!phone) return { dialCode: '+237', national: '' }
-  const match = phone.match(/^(\+\d+)(.*)$/)
-  if (match) return { dialCode: match[1], national: match[2].replace(/\D/g, '') }
-  return { dialCode: '+237', national: phone.replace(/\D/g, '') }
+function parseStoredPhone(phone: string | undefined): {
+  dialCode: string;
+  national: string;
+} {
+  if (!phone) return { dialCode: "+237", national: "" };
+  const match = phone.match(/^(\+\d+)(.*)$/);
+  if (match)
+    return { dialCode: match[1], national: match[2].replace(/\D/g, "") };
+  return { dialCode: "+237", national: phone.replace(/\D/g, "") };
 }
 
 export default function CompleteProfilePage() {
-  const router = useRouter()
-  const { formData, updateFormData, resetFormData } = useSignupContext()
-  const isPhoneSignup = formData.verificationMethod === 'phone'
+  const router = useRouter();
+  const { formData, updateFormData, resetFormData } = useSignupContext();
+  const isPhoneSignup = formData.verificationMethod === "phone";
 
-  const [step, setStep] = useState(0)
-  const [fullName, setFullName] = useState('')
+  const [step, setStep] = useState(0);
+  const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState(() => {
-    const { national } = parseStoredPhone(formData.phone)
-    return national
-  })
-  const [dialCode, setDialCode] = useState(() => parseStoredPhone(formData.phone).dialCode)
-  const [email, setEmail] = useState(formData.email || '')
-  const [location, setLocation] = useState('')
-  const [fullNameError, setFullNameError] = useState<string | null>(null)
-  const [emailError, setEmailError] = useState<string | null>(null)
-  const [saving, setSaving] = useState(false)
+    const { national } = parseStoredPhone(formData.phone);
+    return national;
+  });
+  const [dialCode, setDialCode] = useState(
+    () => parseStoredPhone(formData.phone).dialCode,
+  );
+  const [email, setEmail] = useState(formData.email || "");
+  const [location, setLocation] = useState("");
+  const [fullNameError, setFullNameError] = useState<string | null>(null);
+  const [emailError, setEmailError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
 
-  const isLastStep = isPhoneSignup ? step === 3 : step === 2
-  const showLocation = (!isPhoneSignup && step >= 2) || (isPhoneSignup && step >= 3)
+  const isLastStep = isPhoneSignup ? step === 3 : step === 2;
+  const showLocation =
+    (!isPhoneSignup && step >= 2) || (isPhoneSignup && step >= 3);
 
   const handleContinue = () => {
     if (step === 0) {
-      const trimmed = fullName.trim()
+      const trimmed = fullName.trim();
       if (!trimmed) {
-        setFullNameError('Please enter your full name')
-        return
+        setFullNameError("Please enter your full name");
+        return;
       }
-      setFullNameError(null)
-      setStep(1)
-      return
+      setFullNameError(null);
+      setStep(1);
+      return;
     }
     if (step === 1) {
       if (isPhoneSignup) {
-        setStep(2)
-        return
+        setStep(2);
+        return;
       }
-      const digits = phone.replace(/\D/g, '')
-      if (digits.length < 6) return
-      setStep(2)
-      return
+      const digits = phone.replace(/\D/g, "");
+      if (digits.length < 6) return;
+      setStep(2);
+      return;
     }
     if (step === 2 && isPhoneSignup) {
       if (!email.trim()) {
-        setEmailError('Please enter your email')
-        return
+        setEmailError("Please enter your email");
+        return;
       }
-      setEmailError(null)
-      setStep(3)
-      return
+      setEmailError(null);
+      setStep(3);
+      return;
     }
-  }
+  };
 
   const handleSave = async () => {
-    setSaving(true)
-    await new Promise((r) => setTimeout(r, 1200))
+    setSaving(true);
+    await new Promise((r) => setTimeout(r, 1200));
     updateFormData({
       email: email || formData.email,
-      phone: formData.phone || (dialCode + phone.replace(/\D/g, '')),
-    })
-    resetFormData()
-    router.push('/browse')
-  }
+      phone: formData.phone || dialCode + phone.replace(/\D/g, ""),
+    });
+    resetFormData();
+    router.push("/browse");
+  };
 
   const handleDoItLater = () => {
-    resetFormData()
-    router.push('/browse')
-  }
+    resetFormData();
+    router.push("/browse");
+  };
 
   const handleBack = () => {
-    if (step > 0) setStep(step - 1)
-    else router.back()
-  }
+    if (step > 0) setStep(step - 1);
+    else router.back();
+  };
 
   return (
-    <SignupLayout showProgress={false} onBack={handleBack}>
+    <SignupLayout
+      showProgress={false}
+      onBack={handleBack}
+      backgroundImage="/assets/complete-profile-bg.png"
+    >
       <div className="space-y-6">
         <div className="space-y-1">
           <h1 className="text-xl font-semibold text-primary text-center">
             Complete your profile
           </h1>
-          <p className="text-sm text-center text-muted-foreground">
+          <p className="text-center text-inactive-text text-base font-medium leading-relaxed">
             Sign up to enjoy well organized and up to date Cameroon law
           </p>
         </div>
@@ -109,11 +120,11 @@ export default function CompleteProfilePage() {
             required
             value={fullName}
             onChange={(e) => {
-              setFullName(e.target.value)
-              if (fullNameError) setFullNameError(null)
+              setFullName(e.target.value);
+              if (fullNameError) setFullNameError(null);
             }}
             onBlur={() => {
-              if (fullName.trim()) setFullNameError(null)
+              if (fullName.trim()) setFullNameError(null);
             }}
             error={fullNameError || undefined}
             placeholder="Marie Bliss"
@@ -125,7 +136,11 @@ export default function CompleteProfilePage() {
               value={phone}
               onChange={setPhone}
               onCountryChange={(c) => setDialCode(c.dial_code)}
-              defaultCountryCode={formData.phone ? parseStoredPhone(formData.phone).dialCode : undefined}
+              defaultCountryCode={
+                formData.phone
+                  ? parseStoredPhone(formData.phone).dialCode
+                  : undefined
+              }
               disabled={isPhoneSignup}
               required={!isPhoneSignup}
             />
@@ -139,8 +154,8 @@ export default function CompleteProfilePage() {
               required={isPhoneSignup}
               value={email}
               onChange={(e) => {
-                setEmail(e.target.value)
-                if (emailError) setEmailError(null)
+                setEmail(e.target.value);
+                if (emailError) setEmailError(null);
               }}
               error={emailError || undefined}
               placeholder="mariebliss24@gmail.com"
@@ -181,7 +196,7 @@ export default function CompleteProfilePage() {
                     Saving…
                   </>
                 ) : (
-                  'Save'
+                  "Save"
                 )}
               </Button>
             )}
@@ -196,5 +211,5 @@ export default function CompleteProfilePage() {
         </div>
       </div>
     </SignupLayout>
-  )
+  );
 }

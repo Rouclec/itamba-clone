@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { SignupLayout } from "@/components/auth/signup-layout";
 import { OTPInputImproved } from "@/components/auth/otp-input-improved";
@@ -19,6 +19,9 @@ export default function OTPVerifyPage() {
   const [otpError, setOtpError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [resendTimer, setResendTimer] = useState(0);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => setMounted(true), []);
 
   const validateOTP = (value: string) => {
     try {
@@ -91,15 +94,21 @@ export default function OTPVerifyPage() {
   };
 
   return (
-    <SignupLayout currentStep={2} totalSteps={4} onBack={handleBack}>
+    <SignupLayout
+      currentStep={2}
+      totalSteps={4}
+      onBack={handleBack}
+      backgroundImage="/assets/password-bg.png"
+    >
       <form className="space-y-6" onSubmit={(e) => e.preventDefault()}>
         {/* Header */}
         <div>
           <h2 className="text-xl font-semibold text-primary text-center">
             Verify your phone number
           </h2>
-          <p className="text-sm text-center text-muted-foreground leading-relaxed">
-            Enter the 6 digit code sent to {formData.phone}
+          <p className="text-center text-inactive-text text-base font-medium leading-relaxed">
+            Enter the 6 digit code sent to{" "}
+            {mounted ? formData.phone || "your phone" : "your phone"}
           </p>
         </div>
 
