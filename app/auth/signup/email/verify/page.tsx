@@ -1,12 +1,12 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useSignupContext } from '@/lib/signup-context'
 import { mockVerifyEmail } from '@/lib/mock-api'
 import { VerificationLoader } from '@/components/auth/verification-loader'
 
-export default function EmailVerifyPage() {
+function EmailVerifyContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { formData, updateFormData } = useSignupContext()
@@ -81,5 +81,25 @@ export default function EmailVerifyPage() {
       onRetry={handleRetry}
       onBack={handleBack}
     />
+  )
+}
+
+export default function EmailVerifyPage() {
+  return (
+    <Suspense
+      fallback={
+        <VerificationLoader
+          isLoading
+          isError={false}
+          errorMessage=""
+          successMessage=""
+          message="Loading..."
+          onRetry={() => {}}
+          onBack={() => {}}
+        />
+      }
+    >
+      <EmailVerifyContent />
+    </Suspense>
   )
 }
