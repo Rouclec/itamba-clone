@@ -83,7 +83,7 @@ export function SignupLayout({
           }}
         />
         <div className="relative z-10 flex flex-col flex-1">
-          {/* Mobile Progress & Back */}
+          {/* Mobile Progress & Back. */}
           <div className="md:hidden p-4 flex items-center justify-between border-b border-border">
             {showBackButton ? (
               <button
