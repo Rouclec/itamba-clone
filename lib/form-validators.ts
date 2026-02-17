@@ -1,5 +1,7 @@
 import { z } from 'zod'
 
+export type TranslateFn = (key: string, options?: Record<string, unknown>) => string
+
 export const emailSchema = z.object({
   email: z
     .string()
@@ -33,13 +35,48 @@ export const roleSchema = z.object({
   role: z.string().min(1, 'Please select a role'),
 })
 
+/** Schema with translated messages for use in locale-aware pages */
+export function createEmailSchema(t: TranslateFn) {
+  return z.object({
+    email: z
+      .string()
+      .email(t('validation.invalidEmail'))
+      .min(1, t('validation.emailRequired')),
+  })
+}
+
+export function createPasswordSchema(t: TranslateFn) {
+  return z.object({
+    password: z.string().min(8, t('validation.passwordMinLength')),
+    confirmPassword: z.string(),
+  }).refine(
+    (data) => data.confirmPassword === '' || data.password === data.confirmPassword,
+    { message: t('validation.passwordsDontMatch'), path: ['confirmPassword'] }
+  )
+}
+
+export function createOtpSchema(t: TranslateFn) {
+  return z.object({
+    otp: z
+      .string()
+      .length(6, t('validation.otpMustBe6Digits'))
+      .regex(/^\d+$/, t('validation.otpDigitsOnly')),
+  })
+}
+
+export function createRoleSchema(t: TranslateFn) {
+  return z.object({
+    role: z.string().min(1, t('validation.selectRole')),
+  })
+}
+
 export type EmailFormData = z.infer<typeof emailSchema>
 export type PhoneFormData = z.infer<typeof phoneSchema>
 export type PasswordFormData = z.infer<typeof passwordSchema>
 export type OTPFormData = z.infer<typeof otpSchema>
 export type RoleFormData = z.infer<typeof roleSchema>
 
-// Helper function to validate a single field
+// Helper function to validate a single field (uses non-translated schema; for non-locale code)
 export function validateField(fieldName: string, value: string, schema: z.ZodSchema): string | null {
   try {
     schema.parse({ [fieldName]: value })

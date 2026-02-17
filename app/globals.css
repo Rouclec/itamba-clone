@@ -134,6 +134,7 @@
   --color-body-text: var(--body-text);
   --color-inactive-text: var(--inactive-text);
   --color-surface: var(--surface);
+  --color-hover: var(--hover);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);

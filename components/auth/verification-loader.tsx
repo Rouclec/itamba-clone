@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { useT } from "@/app/i18n/client";
 
 interface VerificationLoaderProps {
   isLoading: boolean;
@@ -18,13 +18,18 @@ interface VerificationLoaderProps {
 export function VerificationLoader({
   isLoading,
   isError = false,
-  errorMessage = "Verification failed. Please try again.",
-  successMessage = "Verified successfully!",
+  errorMessage,
+  successMessage,
   message,
   onRetry,
   onBack,
 }: VerificationLoaderProps) {
+  const { t } = useT('translation');
   const [displayError, setDisplayError] = useState(isError);
+  const defaultError = t('verification.verificationFailedDefault');
+  const defaultSuccess = t('verification.verified');
+  const displayErrorMessage = errorMessage ?? defaultError;
+  const displaySuccessMessage = successMessage ?? defaultSuccess;
 
   useEffect(() => {
     if (isError) {
@@ -52,20 +57,20 @@ export function VerificationLoader({
         <div className="space-y-2 text-center">
           <h2 className="text-xl font-bold text-center text-primary">
             {displayError
-              ? "Verification Failed"
+              ? t('verification.verificationFailed')
               : isLoading
-                ? "Verifying..."
-                : "Verified!"}
+                ? t('verification.verifying')
+                : t('verification.verified')}
           </h2>
           <p className="text-center text-inactive-text text-base font-medium leading-relaxed">
-            {displayError ? errorMessage : isLoading ? message : successMessage}
+            {displayError ? displayErrorMessage : isLoading ? message : displaySuccessMessage}
           </p>
         </div>
 
         {/* Loading spinner text */}
         {isLoading && (
           <div className="text-center text-sm text-muted-foreground animate-pulse">
-            This may take a few moments...
+            {t('verification.mayTakeFewMoments')}
           </div>
         )}
 
@@ -74,12 +79,12 @@ export function VerificationLoader({
           <div className="flex gap-3">
             {onRetry && (
               <Button onClick={onRetry} variant="default" className="flex-1">
-                Try Again
+                {t('verification.tryAgain')}
               </Button>
             )}
             {onBack && (
               <Button onClick={onBack} variant="outline" className="flex-1">
-                Return to Home
+                {t('verification.returnToHome')}
               </Button>
             )}
           </div>

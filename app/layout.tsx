@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import { Analytics } from '@vercel/analytics/next'
 import { Toaster } from 'sonner'
 import { Lato } from 'next/font/google'
+import { AuthProvider } from '@/lib/auth-context'
 import './globals.css'
 
 const lato = Lato({
@@ -51,7 +52,9 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${lato.variable} font-sans antialiased bg-background text-foreground`} suppressHydrationWarning>
-        {children}
+        <AuthProvider>
+          {children}
+        </AuthProvider>
         <Toaster position="top-right" richColors />
         <Analytics />
       </body>

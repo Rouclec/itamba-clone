@@ -1,9 +1,10 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
+import { LocaleLink } from "@/components/locale-link";
 import { ArrowLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useT } from "@/app/i18n/client";
 
 interface SignupLayoutProps {
   children: React.ReactNode;
@@ -24,6 +25,7 @@ export function SignupLayout({
   showBackButton = true,
   onBack,
 }: SignupLayoutProps) {
+  const { t } = useT('translation');
 
   return (
     <div className="min-h-screen bg-background flex flex-col md:flex-row">
@@ -51,10 +53,10 @@ export function SignupLayout({
         <div className="relative z-10 flex-1 flex flex-col justify-end">
           <div className="text-sidebar-foreground space-y-4">
             <div className="text-sm font-medium text-sidebar-accent">
-              — Your Online Library —
+              {t('signupLayout.yourOnlineLibrary')}
             </div>
             <h1 className="text-4xl md:text-5xl font-bold text-balance">
-              Well organized and up to date Cameroon law.
+              {t('signupLayout.sidebarTagline')}
             </h1>
           </div>
         </div>
@@ -95,9 +97,9 @@ export function SignupLayout({
               <button
                 onClick={onBack}
                 className="flex items-center gap-2 text-foreground hover:text-primary transition-colors"
-                aria-label="Go back"
+                aria-label={t('common.back')}
               >
-                <span className="text-sm font-semibold">Back</span>
+                <span className="text-sm font-semibold">{t('common.back')}</span>
               </button>
             ) : (
               <div />
@@ -112,7 +114,7 @@ export function SignupLayout({
           {/* Desktop: logo and back at top – same width as form (same wrapper + padding) */}
           <div className="hidden md:block shrink-0 p-4 md:pt-8 md:pb-0 md:px-8">
             <div className="w-full max-w-[554px] min-w-0 flex items-center justify-between">
-              <Link href="/" className="flex items-start gap-2 shrink-0">
+              <LocaleLink href="/" className="flex items-start gap-2 shrink-0">
                 <div className="relative h-11 w-12 shrink-0">
                   <Image
                     src="/assets/logo.png"
@@ -126,21 +128,21 @@ export function SignupLayout({
                     Itamba
                   </div>
                   <div className="text-xs text-[#9A33FD] leading-tight">
-                    Legal Library
+                    {t('signupLayout.legalLibrary')}
                   </div>
                 </div>
-              </Link>
+              </LocaleLink>
 
               {showBackButton && (
                 <button
                   onClick={onBack}
                   className="flex items-center gap-2 text-foreground hover:text-primary transition-colors shrink-0"
-                  aria-label="Go back"
+                  aria-label={t('common.back')}
                 >
                   <div className="w-8 h-8 bg-[#F0F0F0] rounded-sm flex items-center justify-center">
                     <ArrowLeft className="w-4 h-4 text-primary" />
                   </div>
-                  <span className="text-lg font-semibold">Back</span>
+                  <span className="text-lg font-semibold">{t('common.back')}</span>
                 </button>
               )}
             </div>

@@ -16,6 +16,7 @@ export const MOCK_DELAYS = {
   verifyOTP: { min: 500, max: 1000 },
   createPassword: { min: 500, max: 1000 },
   selectRole: { min: 300, max: 500 },
+  signIn: { min: 600, max: 1000 },
 } as const
 
 /**
@@ -202,5 +203,54 @@ export async function mockCompleteSignup(userId: string): Promise<{
     success: true,
     message: 'Account created successfully',
     redirectUrl: '/browse',
+  }
+}
+
+export type AuthRole = 'admin' | 'client'
+
+/**
+ * Determine role from identifier (admin@example.com → admin, else client)
+ */
+export function getRoleFromIdentifier(
+  identifier: string,
+  method: 'phone' | 'email'
+): AuthRole {
+  if (method === 'email' && identifier.toLowerCase().trim() === 'admin@example.com') {
+    return 'admin'
+  }
+  return 'client'
+}
+
+/**
+ * Mock sign in with phone or email + password
+ */
+export async function mockSignIn(
+  identifier: string,
+  password: string,
+  method: 'phone' | 'email'
+): Promise<{
+  success: boolean
+  message: string
+  role?: AuthRole
+  redirectUrl?: string
+}> {
+  await simulateDelay(MOCK_DELAYS.signIn)
+
+  // Simulate wrong password (10% chance)
+  if (Math.random() < 0.1) {
+    return {
+      success: false,
+      message: 'Invalid phone number/email or password. Please try again.',
+    }
+  }
+
+  const role = getRoleFromIdentifier(identifier, method)
+  const redirectUrl = role === 'admin' ? '/admin' : '/client'
+
+  return {
+    success: true,
+    message: 'Signed in successfully',
+    role,
+    redirectUrl,
   }
 }
