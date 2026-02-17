@@ -8,3 +8,7 @@ node_modules/
 .next/
 .env*.local
 .DS_Store
+
+# Large assets – use CDN or install from npm; do not commit
+*.zip
+public/assets/fonts/Merriweather/
