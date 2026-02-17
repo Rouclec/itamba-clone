@@ -56,7 +56,7 @@ function DocumentCard({
             <span className="min-w-0 truncate text-base text-body-text font-bold">
               {doc.reference} | {doc.issued}
             </span>
-            <p className="line-clamp-3 min-w-0 text-base font-light text-body-text">
+            <p className="line-clamp-3 min-w-0 text-base font-light font-merriweather mt-1 text-body-text">
               {doc.title}
             </p>
             <div className="mt-10 flex flex-1 items-center gap-4 text-xs font-normal text-inactive-text">
