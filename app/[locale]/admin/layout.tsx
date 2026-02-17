@@ -7,6 +7,7 @@ import { useLocalePath } from '@/lib/use-locale'
 import { useT } from '@/app/i18n/client'
 import { Button } from '@/components/ui/button'
 import { ShieldX } from 'lucide-react'
+import { isAdminRole } from '@/utils/auth/role'
 
 export default function AdminLayout({
   children,
@@ -39,7 +40,7 @@ export default function AdminLayout({
     return null
   }
 
-  if (user.role !== 'admin') {
+  if (!isAdminRole(user.role)) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-background p-6">
         <ShieldX className="w-16 h-16 text-destructive mb-4" />

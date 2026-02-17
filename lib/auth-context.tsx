@@ -1,13 +1,12 @@
 'use client'
 
+import type { v2AdminRole, v2UserRole, v2SignupRequest } from '@/@hey_api/users.swagger'
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react'
-
-const AUTH_STORAGE_KEY = 'itamba-auth'
-
-export type Role = 'admin' | 'client'
+import { clearSession, AUTH_STORAGE_KEY, SIGNUP_REQUEST_STORAGE_KEY } from '@/utils/auth/session'
+import { appRoleToApiRole } from '@/utils/auth/role'
 
 export interface AuthUser {
-  role: Role
+  role: v2UserRole | v2AdminRole
   identifier: string
 }
 
@@ -16,42 +15,88 @@ interface AuthContextValue {
   hydrated: boolean
   setUser: (user: AuthUser | null) => void
   signOut: () => void
+  /** In-progress signup OTP request (requestId is at signupRequest.authFactor?.id). Cleared on login/signOut. */
+  signupRequest: v2SignupRequest | null
+  setSignupRequest: (request: v2SignupRequest | null) => void
+  /** Convenience: requestId from signupRequest.authFactor?.id for use during signup. */
+  signupRequestId: string | null
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
 
-export function getRoleFromIdentifier(identifier: string, method: 'phone' | 'email'): Role {
-  if (method === 'email' && identifier.toLowerCase().trim() === 'admin@example.com') {
-    return 'admin'
+function parseStoredUser(raw: string | null): AuthUser | null {
+  if (!raw) return null
+  try {
+    const parsed = JSON.parse(raw) as { role?: string; identifier?: string }
+    if (!parsed?.identifier) return null
+    const role = parsed.role
+    // Support legacy "admin" | "client" from localStorage
+    if (role === 'admin' || role === 'client') {
+      return { role: appRoleToApiRole(role), identifier: parsed.identifier }
+    }
+    if (role && typeof role === 'string') {
+      return { role: role as v2UserRole | v2AdminRole, identifier: parsed.identifier }
+    }
+    return null
+  } catch {
+    return null
   }
-  return 'client'
+}
+
+function parseStoredSignupRequest(raw: string | null): v2SignupRequest | null {
+  if (!raw) return null
+  try {
+    const parsed = JSON.parse(raw) as v2SignupRequest
+    if (parsed && (parsed.authFactor != null || parsed.phoneNumber != null || parsed.email != null)) {
+      return parsed
+    }
+    return null
+  } catch {
+    return null
+  }
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUserState] = useState<AuthUser | null>(null)
+  const [signupRequest, setSignupRequestState] = useState<v2SignupRequest | null>(null)
   const [hydrated, setHydrated] = useState(false)
 
   useEffect(() => {
-    try {
-      const raw = typeof window !== 'undefined' ? localStorage.getItem(AUTH_STORAGE_KEY) : null
-      if (raw) {
-        const parsed = JSON.parse(raw) as AuthUser
-        if (parsed?.role && parsed?.identifier) {
-          setUserState({ role: parsed.role, identifier: parsed.identifier })
-        }
-      }
-    } finally {
+    if (typeof window === 'undefined') {
       setHydrated(true)
+      return
     }
+    setUserState(parseStoredUser(localStorage.getItem(AUTH_STORAGE_KEY)))
+    setSignupRequestState(parseStoredSignupRequest(localStorage.getItem(SIGNUP_REQUEST_STORAGE_KEY)))
+    setHydrated(true)
   }, [])
 
   const setUser = useCallback((next: AuthUser | null) => {
     setUserState(next)
     try {
-      if (next) {
-        localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(next))
-      } else {
-        localStorage.removeItem(AUTH_STORAGE_KEY)
+      if (typeof window !== 'undefined') {
+        if (next) {
+          localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(next))
+          localStorage.removeItem(SIGNUP_REQUEST_STORAGE_KEY)
+          setSignupRequestState(null)
+        } else {
+          localStorage.removeItem(AUTH_STORAGE_KEY)
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }, [])
+
+  const setSignupRequest = useCallback((next: v2SignupRequest | null) => {
+    setSignupRequestState(next)
+    try {
+      if (typeof window !== 'undefined') {
+        if (next) {
+          localStorage.setItem(SIGNUP_REQUEST_STORAGE_KEY, JSON.stringify(next))
+        } else {
+          localStorage.removeItem(SIGNUP_REQUEST_STORAGE_KEY)
+        }
       }
     } catch {
       // ignore
@@ -59,11 +104,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   const signOut = useCallback(() => {
-    setUser(null)
-  }, [setUser])
+    setUserState(null)
+    setSignupRequestState(null)
+    clearSession()
+    try {
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem(AUTH_STORAGE_KEY)
+        localStorage.removeItem(SIGNUP_REQUEST_STORAGE_KEY)
+      }
+    } catch {
+      // ignore
+    }
+  }, [])
+
+  const signupRequestId = signupRequest?.authFactor?.id ?? null
 
   return (
-    <AuthContext.Provider value={{ user, hydrated, setUser, signOut }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        hydrated,
+        setUser,
+        signOut,
+        signupRequest,
+        setSignupRequest,
+        signupRequestId,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   )

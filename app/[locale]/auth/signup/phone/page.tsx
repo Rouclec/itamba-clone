@@ -13,6 +13,7 @@ import { useT } from "@/app/i18n/client";
 import { mockSendOTP } from "@/lib/mock-api";
 import { toast } from "sonner";
 import type { Country } from "@/lib/countries";
+import { toFullNumber, isValidPhone, normalizePhone } from "@/utils/phone";
 
 function parseStoredPhone(phone: string | undefined): {
   dialCode: string;
@@ -39,8 +40,8 @@ export default function PhoneSignupPage() {
   const [isLoading, setIsLoading] = useState(false);
 
   const validatePhone = (value: string): boolean => {
-    const digits = value.replace(/\D/g, "");
-    if (!digits || digits.length < 6) {
+    const full = toFullNumber(dialCode, value);
+    if (!full || !isValidPhone(full)) {
       setPhoneError(t('auth.validPhone'));
       return false;
     }
@@ -50,21 +51,23 @@ export default function PhoneSignupPage() {
 
   const handlePhoneChange = (value: string) => {
     setPhone(value);
-    if (phoneError && value && value.replace(/\D/g, "").length >= 6) {
-      setPhoneError(null);
+    if (phoneError && value) {
+      const full = toFullNumber(dialCode, value);
+      if (full && isValidPhone(full)) setPhoneError(null);
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!validatePhone(phone)) {
+    const fullPhone = normalizePhone(dialCode, phone);
+    if (!fullPhone) {
+      setPhoneError(t('auth.validPhone'));
       return;
     }
+    setPhoneError(null);
 
     setIsLoading(true);
-    const digits = phone.replace(/\D/g, "");
-    const fullPhone = dialCode + digits;
     try {
       const result = await mockSendOTP(fullPhone);
 
@@ -89,7 +92,10 @@ export default function PhoneSignupPage() {
     router.back();
   };
 
-  const isFormValid = phone.replace(/\D/g, "").length >= 6 && !phoneError;
+  const isFormValid =
+    phone.replace(/\D/g, "").length >= 6 &&
+    !phoneError &&
+    isValidPhone(toFullNumber(dialCode, phone));
 
   return (
     <SignupLayout currentStep={1} totalSteps={4} onBack={handleBack}>

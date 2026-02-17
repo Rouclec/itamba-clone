@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { useSignupContext } from "@/lib/signup-context";
 import { useAuth } from "@/lib/auth-context";
 import { useLocalePath } from "@/lib/use-locale";
+import { appRoleToApiRole } from "@/utils/auth/role";
 import { useT } from "@/app/i18n/client";
 import { Loader2 } from "lucide-react";
 
@@ -92,18 +93,20 @@ export default function CompleteProfilePage() {
       phone: finalPhone || formData.phone,
     });
     const identifier = finalEmail || finalPhone;
-    const role = finalEmail.toLowerCase().trim() === "admin@example.com" ? "admin" : "client";
+    const appRole = finalEmail.toLowerCase().trim() === "admin@example.com" ? "admin" : "client";
+    const role = appRoleToApiRole(appRole);
     setUser({ role, identifier });
     resetFormData();
-    router.push(path(role === "admin" ? "/admin" : "/client"));
+    router.push(path(appRole === "admin" ? "/admin" : "/client"));
   };
 
   const handleDoItLater = () => {
     const identifier = formData.email || formData.phone || "";
-    const role = (formData.email || "").toLowerCase().trim() === "admin@example.com" ? "admin" : "client";
+    const appRole = (formData.email || "").toLowerCase().trim() === "admin@example.com" ? "admin" : "client";
+    const role = appRoleToApiRole(appRole);
     setUser({ role, identifier });
     resetFormData();
-    router.push(path(role === "admin" ? "/admin" : "/client"));
+    router.push(path(appRole === "admin" ? "/admin" : "/client"));
   };
 
   const handleBack = () => {

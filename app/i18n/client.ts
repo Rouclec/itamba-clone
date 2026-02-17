@@ -5,8 +5,6 @@ import { useParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
-const runsOnServer = typeof window === 'undefined'
-
 export function useT(ns: string | string[] = 'translation', options?: { keyPrefix?: string }) {
   const params = useParams()
   const locale = params?.locale as string | undefined
@@ -15,9 +13,9 @@ export function useT(ns: string | string[] = 'translation', options?: { keyPrefi
     throw new Error('useT is only available inside app/[locale] routes')
   }
 
-  if (runsOnServer && locale && i18next.resolvedLanguage !== locale) {
-    i18next.changeLanguage(locale)
-  } else if (!runsOnServer) {
+  // Only sync language on the client. On the server we rely on lng: locale in useTranslation
+  // so we don't call changeLanguage (it creates async context and can exhaust Next.js AsyncHook Map).
+  if (typeof window !== 'undefined') {
     const [, setActiveLocale] = useState(i18next.resolvedLanguage)
     useEffect(() => {
       if (!locale || i18next.resolvedLanguage === locale) return

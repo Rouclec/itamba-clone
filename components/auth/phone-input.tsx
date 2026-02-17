@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { ChevronDown } from "lucide-react";
 import { countries, defaultCountry, type Country } from "@/lib/countries";
+import { toFullNumber, parsePhone, formatNational } from "@/utils/phone";
 
 interface PhoneInputProps {
   value: string;
@@ -23,7 +24,7 @@ export function PhoneInput({
   onBlur,
   onCountryChange,
   error,
-  placeholder = "675 224 929",
+  placeholder = "677 777 777",
   required = false,
   disabled = false,
   defaultCountryCode,
@@ -73,6 +74,9 @@ export function PhoneInput({
 
   const formatPhoneDisplay = (digits: string) => {
     if (!digits) return "";
+    const full = toFullNumber(selectedCountry.dial_code, digits);
+    const parsed = parsePhone(full);
+    if (parsed?.isValid()) return formatNational(parsed);
     if (digits.length <= 3) return digits;
     if (digits.length <= 6) return `${digits.slice(0, 3)} ${digits.slice(3)}`;
     return `${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6)}`;

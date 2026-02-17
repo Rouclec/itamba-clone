@@ -3,6 +3,9 @@
  * Used for development and testing without actual backend
  */
 
+import type { v2AdminRole, v2UserRole } from '@/@hey_api/users.swagger'
+import { appRoleToApiRole } from '@/utils/auth/role'
+
 export interface MockDelay {
   min: number
   max: number
@@ -221,8 +224,12 @@ export function getRoleFromIdentifier(
   return 'client'
 }
 
+/** API role type for storage (matches AuthUser.role) */
+export type AuthApiRole = v2UserRole | v2AdminRole
+
 /**
- * Mock sign in with phone or email + password
+ * Mock sign in with phone or email + password.
+ * Returns API role type for auth context storage.
  */
 export async function mockSignIn(
   identifier: string,
@@ -231,7 +238,7 @@ export async function mockSignIn(
 ): Promise<{
   success: boolean
   message: string
-  role?: AuthRole
+  role?: AuthApiRole
   redirectUrl?: string
 }> {
   await simulateDelay(MOCK_DELAYS.signIn)
@@ -244,8 +251,9 @@ export async function mockSignIn(
     }
   }
 
-  const role = getRoleFromIdentifier(identifier, method)
-  const redirectUrl = role === 'admin' ? '/admin' : '/client'
+  const appRole = getRoleFromIdentifier(identifier, method)
+  const role = appRoleToApiRole(appRole)
+  const redirectUrl = appRole === 'admin' ? '/admin' : '/client'
 
   return {
     success: true,

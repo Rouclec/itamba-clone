@@ -202,11 +202,11 @@
 
 [data-sonner-toaster] [data-rich-colors='true'][data-sonner-toast][data-type='error'] {
   background: #fff !important;
-  border-color: var(--primary) !important;
+  border-color: var(--destructive) !important;
   color: var(--destructive) !important;
 }
 [data-sonner-toaster] [data-rich-colors='true'][data-sonner-toast][data-type='error'] [data-close-button] {
   background: #fff !important;
-  border-color: var(--primary) !important;
+  border-color: var(--destructive) !important;
   color: var(--destructive) !important;
 }

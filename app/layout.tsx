@@ -3,6 +3,8 @@ import { Analytics } from '@vercel/analytics/next'
 import { Toaster } from 'sonner'
 import { Lato } from 'next/font/google'
 import { AuthProvider } from '@/lib/auth-context'
+import { QueryProvider } from '@/components/providers/query-provider'
+import { InitInterceptors } from '@/components/init-interceptors'
 import './globals.css'
 
 const lato = Lato({
@@ -52,9 +54,12 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${lato.variable} font-sans antialiased bg-background text-foreground`} suppressHydrationWarning>
-        <AuthProvider>
-          {children}
-        </AuthProvider>
+        <QueryProvider>
+          <AuthProvider>
+            <InitInterceptors />
+            {children}
+          </AuthProvider>
+        </QueryProvider>
         <Toaster position="top-right" richColors />
         <Analytics />
       </body>

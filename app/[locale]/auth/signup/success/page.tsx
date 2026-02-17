@@ -8,6 +8,7 @@ import { useAuth } from "@/lib/auth-context";
 import { useLocalePath } from "@/lib/use-locale";
 import { useT } from "@/app/i18n/client";
 import Image from "next/image";
+import { appRoleToApiRole } from "@/utils/auth/role";
 
 export default function SuccessPage() {
   const router = useRouter();
@@ -19,10 +20,11 @@ export default function SuccessPage() {
   const handleStartBrowsing = () => {
     const email = (formData.email || "").toLowerCase().trim();
     const identifier = formData.email || formData.phone || "";
-    const role = email === "admin@example.com" ? "admin" : "client";
+    const appRole = email === "admin@example.com" ? "admin" : "client";
+    const role = appRoleToApiRole(appRole);
     setUser({ role, identifier });
     resetFormData();
-    router.push(path(role === "admin" ? "/admin" : "/client"));
+    router.push(path(appRole === "admin" ? "/admin" : "/client"));
   };
 
   const handleCompleteProfile = () => {

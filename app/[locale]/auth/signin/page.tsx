@@ -15,6 +15,7 @@ import { useLocalePath } from "@/lib/use-locale";
 import { useT } from "@/app/i18n/client";
 import { toast } from "sonner";
 import type { Country } from "@/lib/countries";
+import { toFullNumber, isValidPhone, normalizePhone } from "@/utils/phone";
 
 export default function SignInPage() {
   const router = useRouter();
@@ -33,8 +34,8 @@ export default function SignInPage() {
   const [isLoading, setIsLoading] = useState(false);
 
   const validatePhone = (value: string): boolean => {
-    const digits = value.replace(/\D/g, "");
-    if (!digits || digits.length < 6) {
+    const full = toFullNumber(dialCode, value);
+    if (!full || !isValidPhone(full)) {
       setPhoneError(t('auth.validPhone'));
       return false;
     }
@@ -72,7 +73,10 @@ export default function SignInPage() {
     }
 
     setIsLoading(true);
-    const identifier = method === "phone" ? dialCode + phone.replace(/\D/g, "") : email.trim();
+    const identifier =
+      method === "phone"
+        ? (normalizePhone(dialCode, phone) ?? toFullNumber(dialCode, phone))
+        : email.trim();
     try {
       const result = await mockSignIn(identifier, password, method);
 
@@ -102,8 +106,14 @@ export default function SignInPage() {
 
   const isFormValid =
     method === "phone"
-      ? phone.replace(/\D/g, "").length >= 6 && password.length >= 6 && !phoneError && !passwordError
-      : email.trim().length > 0 && password.length >= 6 && !emailError && !passwordError;
+      ? isValidPhone(toFullNumber(dialCode, phone)) &&
+        password.length >= 6 &&
+        !phoneError &&
+        !passwordError
+      : email.trim().length > 0 &&
+        password.length >= 6 &&
+        !emailError &&
+        !passwordError;
 
   return (
     <SignupLayout showProgress={false} onBack={() => router.back()}>
