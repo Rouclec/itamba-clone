@@ -4,21 +4,21 @@ import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { SignupLayout } from "@/components/auth/signup-layout";
 import { FormInput } from "@/components/auth/form-input";
-import { Button } from "@/components/ui/button";
-import { useSignupContext } from "@/lib/signup-context";
 import { useLocalePath } from "@/lib/use-locale";
 import { useT } from "@/app/i18n/client";
-import { createPasswordSchema, type PasswordFormData } from "@/lib/form-validators";
-import { mockCreatePassword } from "@/lib/mock-api";
+import {
+  createPasswordSchema,
+} from "@/lib/form-validators";
 import { toast } from "sonner";
 import { z } from "zod";
-import { Eye, EyeOff, Lock, LockOpen } from "lucide-react";
+import { Lock, LockOpen } from "lucide-react";
+import { useAuth } from "@/lib/auth-context";
 
 export default function PasswordPage() {
   const router = useRouter();
   const path = useLocalePath();
-  const { t } = useT('translation');
-  const { formData, updateFormData } = useSignupContext();
+  const { t } = useT("translation");
+  const { signupRequest, setSignupRequest } = useAuth();
   const passwordSchema = useMemo(() => createPasswordSchema(t), [t]);
 
   const [password, setPassword] = useState("");
@@ -77,21 +77,16 @@ export default function PasswordPage() {
 
     setIsLoading(true);
     try {
-      const userId = formData.userId || "temp_user";
-      const result = await mockCreatePassword(userId, password);
+      setSignupRequest({
+        ...signupRequest,
+        password: password,
+      });
 
-      if (result.success) {
-        updateFormData({ password });
-        toast.success(result.message);
+      toast.success(t("auth.passwordCreated"));
 
-        setTimeout(() => {
-          router.push(path("/auth/signup/career"));
-        }, 500);
-      } else {
-        toast.error(result.message);
-      }
+      router.push(path("/auth/signup/career"));
     } catch (error) {
-      toast.error(t('auth.errorOccurred'));
+      toast.error(t("auth.errorOccurred"));
     } finally {
       setIsLoading(false);
     }
@@ -115,19 +110,19 @@ export default function PasswordPage() {
         {/* Header */}
         <div>
           <h2 className="text-xl font-semibold text-primary text-center">
-            {t('auth.createPassword')}
+            {t("auth.createPassword")}
           </h2>
           <p className="text-center text-inactive-text text-base font-medium leading-relaxed">
-            {t('auth.createPasswordSubtitle')}
+            {t("auth.createPasswordSubtitle")}
           </p>
         </div>
 
         {/* Password Input */}
         <div className="relative">
           <FormInput
-            label={t('auth.createPasswordLabel')}
+            label={t("auth.createPasswordLabel")}
             type={showPassword ? "text" : "password"}
-            placeholder="Eyong@456"
+            placeholder="********"
             value={password}
             onChange={handlePasswordChange}
             onBlur={() => validatePasswords(password, confirmPassword)}
@@ -150,9 +145,9 @@ export default function PasswordPage() {
         {/* Confirm Password Input */}
         <div className="relative">
           <FormInput
-            label={t('auth.confirmPassword')}
+            label={t("auth.confirmPassword")}
             type={showConfirmPassword ? "text" : "password"}
-            placeholder="Eyong@456"
+            placeholder="********"
             value={confirmPassword}
             onChange={handleConfirmPasswordChange}
             onBlur={() => validatePasswords(password, confirmPassword)}
@@ -196,10 +191,10 @@ export default function PasswordPage() {
           {isLoading ? (
             <>
               <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              <span>{t('auth.creating')}</span>
+              <span>{t("auth.creating")}</span>
             </>
           ) : (
-            t('auth.createPasswordButton')
+            t("auth.createPasswordButton")
           )}
         </button>
       </form>

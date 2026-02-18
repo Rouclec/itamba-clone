@@ -3,11 +3,6 @@
 import { useState, useMemo } from "react";
 import { Search, LayoutGrid, List, FileText, Star, Globe } from "lucide-react";
 import { useT } from "@/app/i18n/client";
-import {
-  getMockDocuments,
-  MOCK_TOTAL_DOCUMENTS,
-  type DocumentItem,
-} from "@/lib/mock-documents";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -35,14 +30,105 @@ import {
 } from "@/components/ui/pagination";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { useQuery } from "@tanstack/react-query";
+import {
+  documentsMaterialsServiceListPublishedDocumentsOptions,
+  documentsMaterialsServiceListCategoriesOptions,
+  documentsMaterialsServiceListPublishedDocumentTypesOptions,
+} from "@/@hey_api/documentsmaterials.swagger/@tanstack/react-query.gen";
+import type {
+  v2PublishedDocument,
+  v2Category,
+  v2DocumentType,
+} from "@/@hey_api/documentsmaterials.swagger/types.gen";
+import { useAuth } from "@/lib/auth-context";
+import moment from "moment";
 
 const PAGE_SIZE = 9;
+
+const DECADES = [
+  { label: "1950s", start: 1950, end: 1959 },
+  { label: "1960s", start: 1960, end: 1969 },
+  { label: "1970s", start: 1970, end: 1979 },
+  { label: "1980s", start: 1980, end: 1989 },
+  { label: "1990s", start: 1990, end: 1999 },
+  { label: "2000s", start: 2000, end: 2009 },
+  { label: "2010s", start: 2010, end: 2019 },
+  { label: "2020s", start: 2020, end: 2029 },
+] as const;
+
+/**
+ * Pagination slots: numbers and ellipsis.
+ * - Near start (e.g. 11 pages): 1, 2, 3, 4, …, 9, 10, 11
+ * - In middle (e.g. page 20 of 50): 1, …, 19, 20, 21, …, 50
+ * - Near end: 1, 2, 3, …, last-2, last-1, last
+ */
+function getPaginationSlots(
+  page: number,
+  totalPages: number
+): (number | "ellipsis")[] {
+  if (totalPages <= 7) {
+    return Array.from({ length: totalPages }, (_, i) => i + 1);
+  }
+  if (page <= 4) {
+    return [
+      1,
+      2,
+      3,
+      4,
+      "ellipsis",
+      totalPages - 2,
+      totalPages - 1,
+      totalPages,
+    ];
+  }
+  if (page >= totalPages - 2) {
+    return [
+      1,
+      2,
+      3,
+      "ellipsis",
+      totalPages - 2,
+      totalPages - 1,
+      totalPages,
+    ];
+  }
+  return [1, "ellipsis", page - 1, page, page + 1, "ellipsis", totalPages];
+}
+
+/** Display shape for list/card to avoid optional chaining in templates */
+export interface DocumentDisplayItem {
+  id: string;
+  reference: string;
+  title: string;
+  type: string;
+  articles: number;
+  issued: string;
+  language: string;
+}
+
+function mapDocumentToDisplay(doc: v2PublishedDocument): DocumentDisplayItem {
+  const typeLabel =
+    doc.documentType?.titles?.en ??
+    doc.documentType?.titles?.fr ??
+    doc.documentTypeId ??
+    "";
+  return {
+    id: doc.documentId ?? "",
+    reference: doc.ref ?? doc.documentNumber ?? "",
+    title: doc.title ?? "",
+    type: typeLabel,
+    articles: parseInt(doc.materialCount ?? "0", 10),
+    issued: doc.issueDate ?? "",
+    language: doc.language ?? "",
+  };
+}
 
 function DocumentCard({
   doc,
   t,
 }: {
-  doc: DocumentItem;
+  doc: DocumentDisplayItem;
   t: (k: string) => string;
 }) {
   return (
@@ -54,7 +140,7 @@ function DocumentCard({
           </div>
           <div className="min-w-0 flex-1">
             <span className="min-w-0 truncate text-base text-body-text font-bold">
-              {doc.reference} | {doc.issued}
+              {doc.reference} | {moment(doc.issued).format("MMM DD, YYYY")}
             </span>
             <p className="line-clamp-3 min-w-0 text-base font-light font-merriweather mt-1 text-body-text">
               {doc.title}
@@ -95,7 +181,7 @@ function DocumentTableRow({
   doc,
   t,
 }: {
-  doc: DocumentItem;
+  doc: DocumentDisplayItem;
   t: (k: string) => string;
 }) {
   return (
@@ -113,13 +199,10 @@ function DocumentTableRow({
         </span>
       </TableCell>
       <TableCell>{doc.articles}</TableCell>
-      <TableCell>{doc.issued}</TableCell>
+      <TableCell>{moment(doc.issued).format("MMM DD, YYYY")}</TableCell>
       <TableCell className="uppercase">{doc.language}</TableCell>
       <TableCell className="text-right">
-        <Button
-          size="sm"
-          className="bg-surface text-foreground hover:bg-hover"
-        >
+        <Button size="sm" className="bg-surface text-foreground hover:bg-hover">
           {t("client.view")}
         </Button>
       </TableCell>
@@ -128,21 +211,128 @@ function DocumentTableRow({
 }
 
 export function LibraryPageContent() {
-  const { t } = useT("translation");
+  const { t, i18n } = useT("translation");
   const [view, setView] = useState<"grid" | "list">("grid");
+  const { currentUser } = useAuth();
+  const lang = i18n?.language ?? i18n?.resolvedLanguage ?? "en";
+  const sortByTitle = lang.startsWith("fr")
+    ? "SORT_BY_TITLE_FR"
+    : "SORT_BY_TITLE_EN";
+
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
+  const [selectedCatalogueId, setSelectedCatalogueId] = useState<string>("all");
+  const [selectedDocumentTypeId, setSelectedDocumentTypeId] =
+    useState<string>("all");
+  const [selectedDecade, setSelectedDecade] = useState<{
+    start: number;
+    end: number;
+  } | null>(null);
 
-  const documents = useMemo(() => getMockDocuments(page, PAGE_SIZE), [page]);
+  const { data: catResponse } = useQuery({
+    ...documentsMaterialsServiceListCategoriesOptions({
+      path: { userId: currentUser?.userId ?? "" },
+      query: {
+        page: "1",
+        pageSize: "1000",
+        searchKey: "",
+        sortOrder: "ASC",
+        sortBy: sortByTitle,
+      },
+    }),
+    enabled: !!currentUser?.userId,
+  });
 
-  const totalPages = Math.ceil(MOCK_TOTAL_DOCUMENTS / PAGE_SIZE);
+  const { data: typeResponse } = useQuery({
+    ...documentsMaterialsServiceListPublishedDocumentTypesOptions({
+      path: { userId: currentUser?.userId ?? "" },
+      query: { page: "1", pageSize: "1000" },
+    }),
+    enabled: !!currentUser?.userId,
+  });
+
+  const categories: v2Category[] = catResponse?.categories ?? [];
+  const documentTypes: v2DocumentType[] = typeResponse?.documentTypes ?? [];
+
+  const issueDateFrom = selectedDecade
+    ? { year: selectedDecade.start, month: 1, day: 1 }
+    : undefined;
+  const issueDateTo = selectedDecade
+    ? { year: selectedDecade.end, month: 12, day: 31 }
+    : undefined;
+
+  const queryOptions = useMemo(
+    () =>
+      documentsMaterialsServiceListPublishedDocumentsOptions({
+        path: { userId: currentUser?.userId ?? "" },
+        query: {
+          catalogueId:
+            selectedCatalogueId && selectedCatalogueId !== "all"
+              ? selectedCatalogueId
+              : undefined,
+          documentTypeId:
+            selectedDocumentTypeId && selectedDocumentTypeId !== "all"
+              ? selectedDocumentTypeId
+              : undefined,
+          ...(issueDateFrom && {
+            "issueDateFrom.day": issueDateFrom.day,
+            "issueDateFrom.month": issueDateFrom.month,
+            "issueDateFrom.year": issueDateFrom.year,
+          }),
+          ...(issueDateTo && {
+            "issueDateTo.day": issueDateTo.day,
+            "issueDateTo.month": issueDateTo.month,
+            "issueDateTo.year": issueDateTo.year,
+          }),
+          page: page.toString(),
+          pageSize: PAGE_SIZE.toString(),
+          searchKey: search,
+          sortBy: sortByTitle,
+          sortOrder: "SORT_ORDER_UNSPECIFIED",
+        },
+      }),
+    [
+      currentUser?.userId,
+      selectedCatalogueId,
+      selectedDocumentTypeId,
+      issueDateFrom,
+      issueDateTo,
+      page,
+      search,
+      sortByTitle,
+    ]
+  );
+
+  const { data: listData, isLoading } = useQuery({
+    ...queryOptions,
+    enabled: !!currentUser?.userId,
+  });
+
+  const documents = useMemo(
+    () => (listData?.documents ?? []).map(mapDocumentToDisplay),
+    [listData?.documents]
+  );
+
+  const totalItems = useMemo(
+    () => parseInt(listData?.statistics?.totalItems ?? "0", 10),
+    [listData?.statistics?.totalItems]
+  );
+  const totalPages = useMemo(
+    () =>
+      Math.max(
+        1,
+        Math.ceil(totalItems / PAGE_SIZE) ||
+          parseInt(listData?.statistics?.pageCount ?? "1", 10)
+      ),
+    [totalItems, listData?.statistics?.pageCount]
+  );
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl font-semibold text-primary">
-            {t("client.libraryWithCount", { count: MOCK_TOTAL_DOCUMENTS })}
+            {t("client.libraryWithCount", { count: totalItems })}
           </h1>
           <p className="text-body-text font-normal">
             {t("client.librarySubtitle")}
@@ -181,15 +371,38 @@ export function LibraryPageContent() {
           />
         </div>
         <div className="flex items-center gap-4">
-          <Select defaultValue="all">
+          <Select
+            value={selectedCatalogueId}
+            onValueChange={(value) => {
+              setSelectedCatalogueId(value);
+              setPage(1);
+            }}
+          >
             <SelectTrigger className="min-w-0 flex-1">
               <SelectValue placeholder={t("client.allCategories")} />
             </SelectTrigger>
             <SelectContent whiteBackground>
               <SelectItem value="all">{t("client.allCategories")}</SelectItem>
+              {categories.map((cat) => (
+                <SelectItem
+                  key={cat.categoryId}
+                  value={cat.categoryId ?? ""}
+                  disabled={!cat.categoryId}
+                >
+                  {lang.startsWith("fr")
+                    ? cat.titles?.fr ?? cat.titles?.en ?? ""
+                    : cat.titles?.en ?? cat.titles?.fr ?? ""}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
-          <Select defaultValue="all">
+          <Select
+            value={selectedDocumentTypeId}
+            onValueChange={(value) => {
+              setSelectedDocumentTypeId(value);
+              setPage(1);
+            }}
+          >
             <SelectTrigger className="min-w-0 flex-1">
               <SelectValue placeholder={t("client.allDocumentTypes")} />
             </SelectTrigger>
@@ -197,24 +410,71 @@ export function LibraryPageContent() {
               <SelectItem value="all">
                 {t("client.allDocumentTypes")}
               </SelectItem>
+              {documentTypes.map((type) => (
+                <SelectItem
+                  key={type.id}
+                  value={type.id ?? ""}
+                  disabled={!type.id}
+                >
+                  {lang.startsWith("fr")
+                    ? type.titles?.fr ?? type.titles?.en ?? ""
+                    : type.titles?.en ?? type.titles?.fr ?? ""}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
-          <Select defaultValue="all">
+          <Select
+            value={
+              selectedDecade
+                ? `${selectedDecade.start}`
+                : "all"
+            }
+            onValueChange={(value) => {
+              if (value === "all") {
+                setSelectedDecade(null);
+              } else {
+                const decade = DECADES.find(
+                  (d) => String(d.start) === value
+                );
+                if (decade) setSelectedDecade({ start: decade.start, end: decade.end });
+              }
+              setPage(1);
+            }}
+          >
             <SelectTrigger className="min-w-0 flex-1">
               <SelectValue placeholder={t("client.allIssueDates")} />
             </SelectTrigger>
             <SelectContent whiteBackground>
               <SelectItem value="all">{t("client.allIssueDates")}</SelectItem>
+              {DECADES.map((d) => (
+                <SelectItem key={d.start} value={String(d.start)}>
+                  {d.label}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
       </div>
 
-      {view === "grid" ? (
+      {isLoading ? (
+        <p className="text-muted-foreground py-8 text-center">
+          {t("common.loading")}
+        </p>
+      ) : view === "grid" ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {documents.map((doc) => (
-            <DocumentCard key={doc.id} doc={doc} t={t} />
-          ))}
+          {documents.length === 0 ? (
+            <p className="col-span-full text-muted-foreground py-8 text-center">
+              {t("client.noDocuments")}
+            </p>
+          ) : (
+            documents.map((doc, index) => (
+              <DocumentCard
+                key={doc.id || `doc-${index}`}
+                doc={doc}
+                t={t}
+              />
+            ))
+          )}
         </div>
       ) : (
         <div className="rounded-md border border-border">
@@ -233,9 +493,24 @@ export function LibraryPageContent() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {documents.map((doc) => (
-                <DocumentTableRow key={doc.id} doc={doc} t={t} />
-              ))}
+              {documents.length === 0 ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={7}
+                    className="text-muted-foreground py-8 text-center"
+                  >
+                    {t("client.noDocuments")}
+                  </TableCell>
+                </TableRow>
+              ) : (
+                documents.map((doc, index) => (
+                  <DocumentTableRow
+                    key={doc.id || `doc-${index}`}
+                    doc={doc}
+                    t={t}
+                  />
+                ))
+              )}
             </TableBody>
           </Table>
         </div>
@@ -255,27 +530,25 @@ export function LibraryPageContent() {
                 className={cn(page <= 1 && "pointer-events-none opacity-50")}
               />
             </PaginationItem>
-            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-              const p = i + 1;
-              return (
-                <PaginationItem key={p}>
+            {getPaginationSlots(page, totalPages).map((slot, index) =>
+              slot === "ellipsis" ? (
+                <PaginationItem key={`ellipsis-${index}`}>
+                  <span className="px-2">…</span>
+                </PaginationItem>
+              ) : (
+                <PaginationItem key={slot}>
                   <PaginationLink
                     href="#"
                     onClick={(e) => {
                       e.preventDefault();
-                      setPage(p);
+                      setPage(slot);
                     }}
-                    isActive={page === p}
+                    isActive={page === slot}
                   >
-                    {p}
+                    {slot}
                   </PaginationLink>
                 </PaginationItem>
-              );
-            })}
-            {totalPages > 5 && (
-              <PaginationItem>
-                <span className="px-2">…</span>
-              </PaginationItem>
+              )
             )}
             <PaginationItem>
               <PaginationNext

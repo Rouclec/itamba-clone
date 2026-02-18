@@ -14,7 +14,7 @@ interface PhoneInputProps {
   placeholder?: string;
   required?: boolean;
   disabled?: boolean;
-  /** Initial country (e.g. from formData.phone). If not set, uses defaultCountry (Cameroon). */
+  /** Initial country (e.g. from signupRequest.phoneNumber). If not set, uses defaultCountry (Cameroon). */
   defaultCountryCode?: string;
 }
 

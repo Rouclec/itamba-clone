@@ -1,59 +1,70 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { SignupLayout } from "@/components/auth/signup-layout";
 import { RoleSelector, type Role } from "@/components/auth/role-selector";
 import { Button } from "@/components/ui/button";
-import { useSignupContext } from "@/lib/signup-context";
 import { useLocalePath } from "@/lib/use-locale";
 import { useT } from "@/app/i18n/client";
-import { mockSelectRole } from "@/lib/mock-api";
 import { toast } from "sonner";
+import { useAuth } from "@/lib/auth-context";
+import { useMutation } from "@tanstack/react-query";
+import { userServiceSignupMutation } from "@/@hey_api/users.swagger/@tanstack/react-query.gen";
+import { setAuthorizationHeaders } from "@/utils/inteceptor";
+import { setRefreshTokenInStorage } from "@/utils/auth/session";
+import { useGetUserById } from "@/hooks/use-user";
 
 export default function CareerPage() {
   const router = useRouter();
   const path = useLocalePath();
-  const { t } = useT('translation');
-  const { formData, updateFormData } = useSignupContext();
+  const { t } = useT("translation");
+  const { signupRequest, setUserId, userId, setCurrentUser } = useAuth();
+
+  // TODO: convert this to v2 implementation when endpoint is ready
+  const { data: userData, isSuccess } = useGetUserById(userId);
+
+  useEffect(() => {
+    if (isSuccess && userData) {
+      setCurrentUser(userData);
+
+      toast.success(t("auth.accountCreated"));
+      router.push(path("/auth/signup/success"));
+    }
+  }, [isSuccess, userData, setCurrentUser]);
 
   const CAREER_ROLES: Role[] = [
-    { id: "student", label: t('auth.careerStudent') },
-    { id: "employed", label: t('auth.careerEmployed') },
-    { id: "self-employed", label: t('auth.careerSelfEmployed') },
-    { id: "job-seeker", label: t('auth.careerJobSeeker') },
-    { id: "business-man", label: t('auth.careerBusinessMan') },
-    { id: "other", label: t('auth.careerOther') },
+    { id: "student", label: t("auth.careerStudent") },
+    { id: "lawyer", label: t("auth.careerLawyer") },
+    { id: "self-employed", label: t("auth.careerSelfEmployed") },
+    { id: "job-seeker", label: t("auth.careerJobSeeker") },
+    { id: "business-man", label: t("auth.careerBusinessMan") },
+    { id: "other", label: t("auth.careerOther") },
   ];
 
-  const [selectedRole, setSelectedRole] = useState<string>(formData.role || "");
+  const [selectedRole, setSelectedRole] = useState<string>(
+    signupRequest?.profession || "",
+  );
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!selectedRole) {
-      toast.error(t('auth.pleaseSelectCareerRole'));
+      toast.error(t("auth.pleaseSelectCareerRole"));
       return;
     }
 
     setIsLoading(true);
     try {
-      const userId = formData.userId || "temp_user";
-      const result = await mockSelectRole(userId, selectedRole);
-
-      if (result.success) {
-        updateFormData({ role: selectedRole });
-        toast.success(result.message);
-
-        setTimeout(() => {
-          router.push(path("/auth/signup/success"));
-        }, 500);
-      } else {
-        toast.error(result.message);
-      }
+      await signup({
+        body: {
+          ...signupRequest,
+          profession: selectedRole,
+        },
+      });
     } catch (error) {
-      toast.error(t('auth.errorOccurred'));
+      console.error({ error });
     } finally {
       setIsLoading(false);
     }
@@ -62,6 +73,20 @@ export default function CareerPage() {
   const handleBack = () => {
     router.back();
   };
+
+  const { mutateAsync: signup } = useMutation({
+    ...userServiceSignupMutation(),
+    onSuccess: (data) => {
+      const accessToken = data?.tokens?.accessToken ?? "";
+      if (accessToken) setAuthorizationHeaders(accessToken);
+      if (data?.tokens?.refreshToken)
+        setRefreshTokenInStorage(data.tokens.refreshToken);
+      if (data?.userId) setUserId(data.userId);
+    },
+    onError: (error) => {
+      toast.error(error?.response?.data?.message ?? t("auth.errorOccurred"));
+    },
+  });
 
   return (
     <SignupLayout
@@ -74,10 +99,10 @@ export default function CareerPage() {
         {/* Header */}
         <div>
           <h2 className="text-xl font-semibold text-primary text-center">
-            {t('auth.whoAreYouSigningUpAs')}
+            {t("auth.whoAreYouSigningUpAs")}
           </h2>
           <p className="text-center text-inactive-text text-base font-medium leading-relaxed">
-            {t('auth.tellUsYourRole')}
+            {t("auth.tellUsYourRole")}
           </p>
         </div>
 
@@ -103,10 +128,10 @@ export default function CareerPage() {
           {isLoading ? (
             <>
               <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              <span>{t('auth.continuing')}</span>
+              <span>{t("auth.continuing")}</span>
             </>
           ) : (
-            t('common.continue')
+            t("common.continue")
           )}
         </button>
       </form>

@@ -1,34 +1,39 @@
 "use client";
 
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { SignupLayout } from "@/components/auth/signup-layout";
 import { Button } from "@/components/ui/button";
-import { useSignupContext } from "@/lib/signup-context";
 import { useAuth } from "@/lib/auth-context";
 import { useLocalePath } from "@/lib/use-locale";
 import { useT } from "@/app/i18n/client";
 import Image from "next/image";
-import { appRoleToApiRole } from "@/utils/auth/role";
+import { isAdminRole, DEFAULT_USER_ROLE } from "@/utils/auth/role";
+import type { v2UserRole, v2AdminRole } from "@/@hey_api/users.swagger";
 
 export default function SuccessPage() {
   const router = useRouter();
   const path = useLocalePath();
-  const { t } = useT('translation');
-  const { resetFormData, formData } = useSignupContext();
-  const { setUser } = useAuth();
+  const { t } = useT("translation");
+  const { setSignupRequest, setUser, currentUser } = useAuth();
+
+  // After signup we have the user stored; clear signup request so complete-profile uses only currentUser
+  useEffect(() => {
+    if (currentUser) setSignupRequest(null);
+  }, [currentUser, setSignupRequest]);
 
   const handleStartBrowsing = () => {
-    const email = (formData.email || "").toLowerCase().trim();
-    const identifier = formData.email || formData.phone || "";
-    const appRole = email === "admin@example.com" ? "admin" : "client";
-    const role = appRoleToApiRole(appRole);
+    const role = (currentUser?.userRole ?? DEFAULT_USER_ROLE) as
+      | v2UserRole
+      | v2AdminRole;
+    const identifier =
+      currentUser?.email ?? currentUser?.userId ?? "";
     setUser({ role, identifier });
-    resetFormData();
-    router.push(path(appRole === "admin" ? "/admin" : "/client"));
+    const redirectPath = isAdminRole(role) ? "/admin" : "/client";
+    router.push(path(redirectPath));
   };
 
   const handleCompleteProfile = () => {
-    resetFormData();
     router.push(path("/profile/complete"));
   };
 

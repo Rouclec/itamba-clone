@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter, usePathname } from 'next/navigation'
-import { Globe, ChevronDown, Check, Settings, LogOut, ChevronRight } from 'lucide-react'
+import { Globe, ChevronDown, Check, Settings, LogOut, ChevronRight, UserPen } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
 import { useT } from '@/app/i18n/client'
 import { LocaleLink } from '@/components/locale-link'
@@ -14,11 +14,15 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { cn } from '@/lib/utils'
 import i18next from '@/app/i18n/i18next'
 
+function avatarLabel(currentUser: { fullName?: string; email?: string; telephone?: string } | null) {
+  const s = currentUser?.fullName ?? currentUser?.email ?? currentUser?.telephone ?? ''
+  return s.slice(0, 2).toUpperCase() || 'U'
+}
+
 export function LibraryHeader() {
-  const { user, signOut } = useAuth()
+  const { currentUser, signOut } = useAuth()
   const { t, i18n } = useT('translation')
   const router = useRouter()
   const pathname = usePathname()
@@ -52,12 +56,12 @@ export function LibraryHeader() {
           >
             <Avatar className="size-8 shrink-0 rounded-full bg-primary/20">
               <AvatarFallback className="rounded-full bg-primary/20 text-primary text-sm">
-                {user?.identifier?.slice(0, 2).toUpperCase() ?? 'U'}
+                {avatarLabel(currentUser)}
               </AvatarFallback>
             </Avatar>
             <div className="hidden text-left min-w-0 md:block">
               <div className="flex items-center gap-1 text-sm font-medium truncate">
-                Magistrate
+                {currentUser?.fullName ?? currentUser?.email ?? currentUser?.telephone ?? '—'}
                 <Check className="size-4 shrink-0 text-primary" />
               </div>
               <div className="text-xs text-muted-foreground">{t('client.freePlan')}</div>
@@ -73,12 +77,12 @@ export function LibraryHeader() {
             <div className="flex items-center gap-3">
               <Avatar className="size-12 rounded-full bg-primary/20">
                 <AvatarFallback className="rounded-full bg-primary/20 text-primary">
-                  {user?.identifier?.slice(0, 2).toUpperCase() ?? 'U'}
+                  {avatarLabel(currentUser)}
                 </AvatarFallback>
               </Avatar>
               <div className="min-w-0 flex-1">
-                <p className="font-semibold truncate">Magistrate</p>
-                <p className="text-sm text-muted-foreground truncate">{user?.identifier ?? '—'}</p>
+                <p className="font-semibold truncate">{currentUser?.fullName ?? '—'}</p>
+                <p className="text-sm text-muted-foreground truncate">{currentUser?.email ?? currentUser?.telephone ?? '—'}</p>
                 <span className="inline-flex items-center rounded-md bg-surface px-1.5 py-0.5 text-xs font-medium">
                   {t('client.freePlan')}
                 </span>
@@ -99,15 +103,24 @@ export function LibraryHeader() {
                 href="/client/settings"
                 className="flex cursor-pointer items-center gap-2 focus:bg-surface focus:text-foreground data-highlighted:bg-surface data-highlighted:text-foreground"
               >
-                <Settings className="size-4" />
+                <Settings className="size-4 text-body-text" />
                 {t('client.settings')}
+              </LocaleLink>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <LocaleLink
+                href="/profile/complete"
+                className="flex cursor-pointer items-center gap-2 focus:bg-surface focus:text-foreground data-highlighted:bg-surface data-highlighted:text-foreground"
+              >
+                <UserPen className="size-4 text-body-text" />
+                {t('auth.completeProfile')}
               </LocaleLink>
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() => signOut()}
-              className="cursor-pointer text-foreground focus:bg-surface focus:text-foreground data-highlighted:bg-surface data-highlighted:text-foreground"
+              className="cursor-pointer text-red-600 focus:bg-surface focus:text-foreground data-highlighted:bg-surface data-highlighted:text-foreground"
             >
-              <LogOut className="size-4" />
+              <LogOut className="size-4 text-red-500" />
               {t('client.logOut')}
             </DropdownMenuItem>
             <Button className="w-full bg-primary text-primary-foreground hover:bg-primary/90">

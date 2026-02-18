@@ -5,6 +5,7 @@ import { Lato } from 'next/font/google'
 import { AuthProvider } from '@/lib/auth-context'
 import { QueryProvider } from '@/components/providers/query-provider'
 import { InitInterceptors } from '@/components/init-interceptors'
+import { CurrentUserFetcher } from '@/components/current-user-fetcher'
 import './globals.css'
 
 const lato = Lato({
@@ -57,6 +58,7 @@ export default function RootLayout({
         <QueryProvider>
           <AuthProvider>
             <InitInterceptors />
+            <CurrentUserFetcher />
             {children}
           </AuthProvider>
         </QueryProvider>

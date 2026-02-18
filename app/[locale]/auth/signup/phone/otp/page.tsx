@@ -1,32 +1,51 @@
 "use client";
 
-import { useState, useCallback, useEffect, useMemo } from "react";
+import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { SignupLayout } from "@/components/auth/signup-layout";
 import { OTPInputImproved } from "@/components/auth/otp-input-improved";
 import { Button } from "@/components/ui/button";
-import { useSignupContext } from "@/lib/signup-context";
+import { useAuth } from "@/lib/auth-context";
 import { useLocalePath } from "@/lib/use-locale";
 import { useT } from "@/app/i18n/client";
 import { createOtpSchema } from "@/lib/form-validators";
-import { mockVerifyOTP } from "@/lib/mock-api";
 import { toast } from "sonner";
 import { z } from "zod";
+import { useMutation } from "@tanstack/react-query";
+import {
+  userServiceSendSignupOtpMutation,
+  userServiceVerifyOtpMutation,
+} from "@/@hey_api/users.swagger/@tanstack/react-query.gen";
+import { v2SignupRequest } from "@/@hey_api/users.swagger";
+
+const INITIAL_RESEND_SECONDS = 30;
 
 export default function OTPVerifyPage() {
   const router = useRouter();
   const path = useLocalePath();
-  const { t } = useT('translation');
-  const { formData, updateFormData } = useSignupContext();
+  const { t } = useT("translation");
+  const { signupRequest, setSignupRequest } = useAuth();
   const otpSchema = useMemo(() => createOtpSchema(t), [t]);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  const [requestId, setRequestId] = useState<string | null>(
+    () => signupRequest?.authFactor?.id ?? null,
+  );
   const [otp, setOtp] = useState("");
   const [otpError, setOtpError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [resendTimer, setResendTimer] = useState(0);
+  const [prevTimeout, setPrevTimeout] = useState(INITIAL_RESEND_SECONDS);
+  const [retryCount, setRetryCount] = useState(0);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => setMounted(true), []);
+
+  // Sync requestId from auth context when it changes (e.g. after hydration)
+  useEffect(() => {
+    const id = signupRequest?.authFactor?.id ?? null;
+    setRequestId(id);
+  }, [signupRequest]);
 
   const validateOTP = (value: string) => {
     try {
@@ -41,6 +60,18 @@ export default function OTPVerifyPage() {
     }
   };
 
+  const { mutateAsync: sendSignupOtp } = useMutation({
+    ...userServiceSendSignupOtpMutation(),
+    onError: () => toast.error(t("auth.failedToResendOtp")),
+  });
+
+  const { mutateAsync: verifyOtp } = useMutation({
+    ...userServiceVerifyOtpMutation(),
+    onError: (error) => {
+      toast.error(error?.response?.data?.message ?? t("auth.errorOccurred"));
+    },
+  });
+
   const handleOTPComplete = useCallback(
     async (value: string) => {
       if (!validateOTP(value)) {
@@ -49,48 +80,108 @@ export default function OTPVerifyPage() {
 
       setIsLoading(true);
       try {
-        const phone = formData.phone || "";
-        const result = await mockVerifyOTP(value, phone);
+        const data = await verifyOtp({
+          body: {
+            authFactor: {
+              type: "FACTOR_TYPE_SMS_OTP",
+              id: requestId ?? undefined,
+              secretValue: value,
+            },
+          },
+        });
 
-        if (result.success && result.userId) {
-          updateFormData({ userId: result.userId });
-          toast.success(result.message);
-
-          setTimeout(() => {
-            router.push(path("/auth/signup/password"));
-          }, 500);
+        if (data?.valid) {
+          setSignupRequest(
+            signupRequest
+              ? ({ ...signupRequest, otp: value } as v2SignupRequest)
+              : null,
+          );
+          toast.success(t("auth.otpVerified"));
+          router.push(path("/auth/signup/password"));
         } else {
-          setOtpError(result.message);
-          toast.error(result.message);
-          setOtp("");
+          setOtpError(t("auth.invalidOtp"));  
         }
-      } catch (error) {
-        setOtpError(t('auth.errorOccurred'));
-        toast.error(t('auth.errorOccurred'));
-        setOtp("");
+      } catch {
+        setOtpError(t("auth.errorOccurred"));
       } finally {
         setIsLoading(false);
       }
     },
-    [formData, updateFormData, router, path, t, otpSchema],
+    [
+      requestId,
+      signupRequest,
+      setSignupRequest,
+      verifyOtp,
+      router,
+      path,
+      t,
+      otpSchema,
+    ],
   );
 
-  const handleResendOTP = async () => {
-    try {
-      setResendTimer(60);
-      const interval = setInterval(() => {
-        setResendTimer((prev) => {
-          if (prev <= 1) {
-            clearInterval(interval);
-            return 0;
+  const startResendCountdown = useCallback((seconds: number) => {
+    if (timerRef.current) clearInterval(timerRef.current);
+    setResendTimer(seconds);
+    timerRef.current = setInterval(() => {
+      setResendTimer((prev) => {
+        if (prev <= 1) {
+          if (timerRef.current) {
+            clearInterval(timerRef.current);
+            timerRef.current = null;
           }
-          return prev - 1;
-        });
-      }, 1000);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  }, []);
 
-      toast.success(t('auth.otpResentSuccess'));
-    } catch (error) {
-      toast.error(t('auth.failedToResendOtp'));
+  useEffect(
+    () => () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    },
+    [],
+  );
+
+  // Start initial 30s countdown when user first lands on the OTP screen
+  useEffect(() => {
+    startResendCountdown(INITIAL_RESEND_SECONDS);
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, [startResendCountdown]);
+
+  const handleResendOTP = async () => {
+    const phone = signupRequest?.phoneNumber;
+    if (!phone) {
+      toast.error(t("auth.failedToResendOtp"));
+      return;
+    }
+    try {
+      const data = await sendSignupOtp({
+        body: { phoneNumber: phone },
+      });
+      const newRequestId = data?.requestId ?? null;
+      if (newRequestId) {
+        setRequestId(newRequestId);
+        const updated: v2SignupRequest = {
+          authFactor: { type: "FACTOR_TYPE_SMS_OTP", id: newRequestId },
+          phoneNumber: phone,
+        };
+        setSignupRequest(updated);
+      }
+
+      const nextRetryCount = retryCount + 1;
+      const nextTimeout =
+        retryCount === 0
+          ? INITIAL_RESEND_SECONDS
+          : 60 * nextRetryCount + prevTimeout;
+      setRetryCount(nextRetryCount);
+      setPrevTimeout(nextTimeout);
+      startResendCountdown(nextTimeout);
+      toast.success(t("auth.otpResentSuccess"));
+    } catch {
+      // onError already shows toast
     }
   };
 
@@ -109,11 +200,13 @@ export default function OTPVerifyPage() {
         {/* Header */}
         <div>
           <h2 className="text-xl font-semibold text-primary text-center">
-            {t('auth.verifyYourPhone')}
+            {t("auth.verifyYourPhone")}
           </h2>
           <p className="text-center text-inactive-text text-base font-medium leading-relaxed">
-            {t('auth.enterCodeSentTo')}{" "}
-            {mounted ? formData.phone || t('auth.yourPhone') : t('auth.yourPhone')}
+            {t("auth.enterCodeSentTo")}{" "}
+            {mounted
+              ? signupRequest?.phoneNumber || t("auth.yourPhone")
+              : t("auth.yourPhone")}
           </p>
         </div>
 
@@ -128,7 +221,7 @@ export default function OTPVerifyPage() {
 
         {/* Resend OTP */}
         <div className="text-base font-medium text-center leading-relaxed">
-          <span className="text-body-text">{t('auth.didntReceiveCode')} </span>
+          <span className="text-body-text">{t("auth.didntReceiveCode")} </span>
           <button
             type="button"
             onClick={handleResendOTP}
@@ -139,7 +232,9 @@ export default function OTPVerifyPage() {
                 : "text-secondary"
             }`}
           >
-            {resendTimer > 0 ? t('auth.resendIn', { count: resendTimer }) : t('auth.resendIn10s')}
+            {resendTimer > 0
+              ? t("auth.resendIn", { count: resendTimer })
+              : t("auth.resend")}
           </button>
         </div>
 
@@ -156,19 +251,19 @@ export default function OTPVerifyPage() {
           {isLoading ? (
             <span className="flex items-center gap-2">
               <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-              {t('auth.verifyingPhone')}
+              {t("auth.verifyingPhone")}
             </span>
           ) : (
-            t('auth.verifyPhoneNumber')
+            t("auth.verifyPhoneNumber")
           )}
         </Button>
 
         {/* Footer */}
         <div className="text-base font-semibold text-center leading-relaxed">
           <p>
-            {t('auth.havingIssues')}{" "}
+            {t("auth.havingIssues")}{" "}
             <a href="#" className="text-secondary hover:underline">
-              {t('common.contactUs')}
+              {t("common.contactUs")}
             </a>
           </p>
         </div>

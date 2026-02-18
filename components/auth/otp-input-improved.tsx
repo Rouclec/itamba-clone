@@ -96,9 +96,6 @@ export function OTPInputImproved({
           />
         ))}
       </div>
-      {error && (
-        <p className="text-sm text-destructive text-center">Invalid code. Please try again.</p>
-      )}
     </div>
   )
 }

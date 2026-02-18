@@ -6,12 +6,16 @@ import { SignupLayout } from "@/components/auth/signup-layout";
 import { FormInput } from "@/components/auth/form-input";
 import { PhoneInput } from "@/components/auth/phone-input";
 import { Button } from "@/components/ui/button";
-import { useSignupContext } from "@/lib/signup-context";
 import { useAuth } from "@/lib/auth-context";
 import { useLocalePath } from "@/lib/use-locale";
-import { appRoleToApiRole } from "@/utils/auth/role";
+import { isAdminRole, DEFAULT_USER_ROLE } from "@/utils/auth/role";
 import { useT } from "@/app/i18n/client";
 import { Loader2 } from "lucide-react";
+import { useMutation } from "@tanstack/react-query";
+import { userServiceCompleteProfileMutation } from "@/@hey_api/users.swagger/@tanstack/react-query.gen";
+import { toast } from "sonner";
+import { fetchUserById } from "@/hooks/use-user";
+import type { v2UserRole, v2AdminRole } from "@/@hey_api/users.swagger";
 
 function parseStoredPhone(phone: string | undefined): {
   dialCode: string;
@@ -27,22 +31,25 @@ function parseStoredPhone(phone: string | undefined): {
 export default function CompleteProfilePage() {
   const router = useRouter();
   const path = useLocalePath();
-  const { t } = useT('translation');
-  const { formData, updateFormData, resetFormData } = useSignupContext();
-  const { setUser } = useAuth();
-  const isPhoneSignup = formData.verificationMethod === "phone";
+  const { t } = useT("translation");
+  const { setUser, userId, setCurrentUser, currentUser } = useAuth();
+  const isPhoneSignup = !!(
+    currentUser?.telephone && !currentUser?.email
+  );
 
   const [step, setStep] = useState(0);
-  const [fullName, setFullName] = useState("");
+  const [fullName, setFullName] = useState(currentUser?.fullName ?? "");
   const [phone, setPhone] = useState(() => {
-    const { national } = parseStoredPhone(formData.phone);
+    const { national } = parseStoredPhone(currentUser?.telephone);
     return national;
   });
   const [dialCode, setDialCode] = useState(
-    () => parseStoredPhone(formData.phone).dialCode,
+    () => parseStoredPhone(currentUser?.telephone).dialCode,
   );
-  const [email, setEmail] = useState(formData.email || "");
-  const [location, setLocation] = useState("");
+  const [email, setEmail] = useState(currentUser?.email ?? "");
+  const [location, setLocation] = useState(
+    currentUser?.city ?? currentUser?.address ?? "",
+  );
   const [fullNameError, setFullNameError] = useState<string | null>(null);
   const [emailError, setEmailError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -55,7 +62,7 @@ export default function CompleteProfilePage() {
     if (step === 0) {
       const trimmed = fullName.trim();
       if (!trimmed) {
-        setFullNameError(t('profile.pleaseEnterFullName'));
+        setFullNameError(t("profile.pleaseEnterFullName"));
         return;
       }
       setFullNameError(null);
@@ -74,7 +81,7 @@ export default function CompleteProfilePage() {
     }
     if (step === 2 && isPhoneSignup) {
       if (!email.trim()) {
-        setEmailError(t('profile.pleaseEnterEmail'));
+        setEmailError(t("profile.pleaseEnterEmail"));
         return;
       }
       setEmailError(null);
@@ -84,35 +91,65 @@ export default function CompleteProfilePage() {
   };
 
   const handleSave = async () => {
+    if (!userId) {
+      toast.error(t("common.errorOccured"));
+      return;
+    }
     setSaving(true);
-    await new Promise((r) => setTimeout(r, 1200));
-    const finalEmail = email || formData.email || "";
-    const finalPhone = formData.phone || dialCode + phone.replace(/\D/g, "");
-    updateFormData({
-      email: finalEmail || formData.email,
-      phone: finalPhone || formData.phone,
-    });
-    const identifier = finalEmail || finalPhone;
-    const appRole = finalEmail.toLowerCase().trim() === "admin@example.com" ? "admin" : "client";
-    const role = appRoleToApiRole(appRole);
-    setUser({ role, identifier });
-    resetFormData();
-    router.push(path(appRole === "admin" ? "/admin" : "/client"));
+    try {
+      const builtPhone = (dialCode + phone.replace(/\D/g, "")).trim();
+      const finalPhone =
+        builtPhone || currentUser?.telephone || undefined;
+      await completeProfile({
+        path: { userId },
+        body: {
+          fullName: fullName.trim(),
+          email: email.trim() || undefined,
+          phoneNumber: finalPhone || undefined,
+          location: location.trim() || undefined,
+        },
+      });
+      const freshUser = await fetchUserById(userId);
+      if (freshUser) {
+        setCurrentUser(freshUser);
+        const role = (freshUser.userRole ?? DEFAULT_USER_ROLE) as
+          | v2UserRole
+          | v2AdminRole;
+        const identifier =
+          freshUser.userId ?? freshUser.email ?? freshUser?.telephone ?? "";
+        setUser({ role, identifier });
+        router.push(path(isAdminRole(role) ? "/admin" : "/client"));
+      } else {
+        toast.error(t("common.errorOccured"));
+      }
+    } catch {
+      // onError shows toast
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleDoItLater = () => {
-    const identifier = formData.email || formData.phone || "";
-    const appRole = (formData.email || "").toLowerCase().trim() === "admin@example.com" ? "admin" : "client";
-    const role = appRoleToApiRole(appRole);
+    const role = (currentUser?.userRole ?? DEFAULT_USER_ROLE) as
+      | v2UserRole
+      | v2AdminRole;
+    const identifier =
+      currentUser?.email ?? currentUser?.userId ?? currentUser?.telephone ?? "";
     setUser({ role, identifier });
-    resetFormData();
-    router.push(path(appRole === "admin" ? "/admin" : "/client"));
+    router.push(path(isAdminRole(role) ? "/admin" : "/client"));
   };
 
   const handleBack = () => {
     if (step > 0) setStep(step - 1);
     else router.back();
   };
+
+  const { mutateAsync: completeProfile } = useMutation({
+    ...userServiceCompleteProfileMutation(),
+    onError: (error) => {
+      toast.error(error?.response?.data?.message ?? t("common.errorOccured"));
+    },
+  });
 
   return (
     <SignupLayout
@@ -123,17 +160,17 @@ export default function CompleteProfilePage() {
       <div className="space-y-6">
         <div className="space-y-1">
           <h1 className="text-xl font-semibold text-primary text-center">
-            {t('profile.completeYourProfile')}
+            {t("profile.completeYourProfile")}
           </h1>
           <p className="text-center text-inactive-text text-base font-medium leading-relaxed">
-            {t('profile.completeSubtitle')}
+            {t("profile.completeSubtitle")}
           </p>
         </div>
 
         <div className="space-y-4">
           {/* Full name – always visible */}
           <FormInput
-            label={t('profile.fullName')}
+            label={t("profile.fullName")}
             required
             value={fullName}
             onChange={(e) => {
@@ -154,8 +191,8 @@ export default function CompleteProfilePage() {
               onChange={setPhone}
               onCountryChange={(c) => setDialCode(c.dial_code)}
               defaultCountryCode={
-                formData.phone
-                  ? parseStoredPhone(formData.phone).dialCode
+                currentUser?.telephone
+                  ? parseStoredPhone(currentUser.telephone).dialCode
                   : undefined
               }
               disabled={isPhoneSignup}
@@ -166,7 +203,7 @@ export default function CompleteProfilePage() {
           {/* Email – appears after second Continue */}
           {step >= 2 && (
             <FormInput
-              label={t('auth.emailAddress')}
+              label={t("auth.emailAddress")}
               type="email"
               required={isPhoneSignup}
               value={email}
@@ -183,7 +220,7 @@ export default function CompleteProfilePage() {
           {/* Location – same step as email for email signup, next step for phone signup */}
           {showLocation && (
             <FormInput
-              label={t('profile.location')}
+              label={t("profile.location")}
               value={location}
               onChange={(e) => setLocation(e.target.value)}
               placeholder="Buea-Cameroon"
@@ -198,7 +235,7 @@ export default function CompleteProfilePage() {
                 onClick={handleContinue}
                 className="w-full h-11 bg-primary text-primary-foreground"
               >
-                {t('common.continue')}
+                {t("common.continue")}
               </Button>
             ) : (
               <Button
@@ -210,10 +247,10 @@ export default function CompleteProfilePage() {
                 {saving ? (
                   <>
                     <Loader2 className="size-4 animate-spin" />
-                    {t('profile.saving')}
+                    {t("profile.saving")}
                   </>
                 ) : (
-                  t('common.save')
+                  t("common.save")
                 )}
               </Button>
             )}
@@ -222,7 +259,7 @@ export default function CompleteProfilePage() {
               onClick={handleDoItLater}
               className="w-full h-10 text-secondary font-medium underline"
             >
-              {t('profile.doItLater')}
+              {t("profile.doItLater")}
             </button>
           </div>
         </div>

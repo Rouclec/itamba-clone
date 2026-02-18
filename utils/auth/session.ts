@@ -28,13 +28,30 @@ export interface UserJwtTokenType {
   };
 }
 
-const REFRESH_TOKEN_STORAGE_KEY = "@refreshToken";
+export const REFRESH_TOKEN_STORAGE_KEY = "@refreshToken";
+
+/** Persist refresh token (e.g. after signup or login). */
+export function setRefreshTokenInStorage(refreshToken: string): void {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(REFRESH_TOKEN_STORAGE_KEY, refreshToken.trim());
+  } catch {
+    // ignore
+  }
+}
 
 /** Same key as auth-context uses; cleared on sign out so proxy and client stay in sync */
 export const AUTH_STORAGE_KEY = "itamba-auth";
 
 /** Signup OTP request stored during signup flow; cleared on sign out / session clear */
 export const SIGNUP_REQUEST_STORAGE_KEY = "itamba-signup-request";
+
+/** Authenticated user id (e.g. after signup); cleared on sign out */
+export const USER_ID_STORAGE_KEY = "itamba-user-id";
+
+/** Cached current user profile; hydrated on load, refetched when user lands. Cleared on sign out. */
+export const CURRENT_USER_STORAGE_KEY = "itamba-current-user";
+
 const COOKIE_EXPIRY_DATE_MS = 10 * 24 * 60 * 60 * 1000;
 
 /**
@@ -88,16 +105,16 @@ export function clearSession() {
     localStorage.removeItem(REFRESH_TOKEN_STORAGE_KEY);
     localStorage.removeItem(AUTH_STORAGE_KEY);
     localStorage.removeItem(SIGNUP_REQUEST_STORAGE_KEY);
+    localStorage.removeItem(USER_ID_STORAGE_KEY);
+    localStorage.removeItem(CURRENT_USER_STORAGE_KEY);
   }
 }
 
 export async function refreshAccessToken(): Promise<{
   accessToken: string;
 } | null> {
-  const baseURL =
-    (typeof window !== "undefined"
-      ? process.env.NEXT_PUBLIC_API_BASE_URL
-      : process.env.API_BASE_URL) ?? process.env.API_BASE_URL;
+  const baseURL = process.env.NEXT_PUBLIC_API_BASE_URL
+
   if (!baseURL) return null;
 
   const refreshToken = getRefreshTokenFromStorage();

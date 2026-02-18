@@ -7,7 +7,6 @@ import { PhoneInput } from "@/components/auth/phone-input";
 import { LocaleLink } from "@/components/locale-link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import { useSignupContext } from "@/lib/signup-context";
 import { useAuth } from "@/lib/auth-context";
 import { useLocalePath } from "@/lib/use-locale";
 import { useT } from "@/app/i18n/client";
@@ -22,7 +21,6 @@ export function SignupForm() {
   const router = useRouter();
   const path = useLocalePath();
   const { t } = useT("translation");
-  const { updateFormData } = useSignupContext();
   const { setSignupRequest } = useAuth();
 
   const [phone, setPhone] = useState("");
@@ -71,7 +69,6 @@ export function SignupForm() {
   };
 
   const handleEmailSignup = () => {
-    updateFormData({ verificationMethod: "email" });
     router.push(path("/auth/signup/email"));
   };
 
@@ -93,11 +90,6 @@ export function SignupForm() {
         phoneNumber: e164 ?? toFullNumber(dialCode, phone),
       };
       setSignupRequest(req);
-      updateFormData({
-        phone: e164 ?? toFullNumber(dialCode, phone),
-        userId: "temp_user",
-        verificationMethod: "phone",
-      });
       toast.success(t("auth.otpSentSuccess"));
       router.push(path("/auth/signup/phone/otp"));
     },

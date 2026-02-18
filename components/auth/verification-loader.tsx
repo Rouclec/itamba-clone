@@ -32,17 +32,15 @@ export function VerificationLoader({
   const displaySuccessMessage = successMessage ?? defaultSuccess;
 
   useEffect(() => {
-    if (isError) {
-      setDisplayError(true);
-    }
+    setDisplayError(isError);
   }, [isError]);
 
   return (
     <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
       <div className="bg-card rounded-2xl shadow-2xl p-8 md:p-12 max-w-md w-full space-y-6">
-        {/* Icon */}
+        {/* Icon - show only one at a time to avoid loader + error glitch */}
         <div className="flex justify-center">
-          {isLoading && (
+          {isLoading && !displayError && (
             <Loader2 className="w-16 h-16 text-primary animate-spin" />
           )}
           {displayError && (

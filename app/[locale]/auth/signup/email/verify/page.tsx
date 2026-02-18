@@ -1,106 +1,125 @@
-'use client'
+"use client";
 
-import { Suspense, useEffect, useState } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
-import { useSignupContext } from '@/lib/signup-context'
-import { useLocalePath } from '@/lib/use-locale'
-import { useT } from '@/app/i18n/client'
-import { mockVerifyEmail } from '@/lib/mock-api'
-import { VerificationLoader } from '@/components/auth/verification-loader'
+import { Suspense, useEffect, useRef } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@/lib/auth-context";
+import { useLocalePath } from "@/lib/use-locale";
+import { useT } from "@/app/i18n/client";
+import { VerificationLoader } from "@/components/auth/verification-loader";
+import { userServiceVerifyEmailOptions } from "@/@hey_api/users.swagger/@tanstack/react-query.gen";
+import { v2SignupRequest } from "@/@hey_api/users.swagger";
+
+function getBackendErrorMessage(error: unknown): string | undefined {
+  const err = error as { response?: { data?: { message?: string } } };
+  return err?.response?.data?.message;
+}
 
 function EmailVerifyContent() {
-  const router = useRouter()
-  const path = useLocalePath()
-  const { t } = useT('translation')
-  const searchParams = useSearchParams()
-  const { formData, updateFormData } = useSignupContext()
-  const token = searchParams.get('token')
+  const router = useRouter();
+  const path = useLocalePath();
+  const { t, ready } = useT("translation");
+  const searchParams = useSearchParams();
+  const { signupRequest, setSignupRequest } = useAuth();
+  const successNavigateTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const successHandledRef = useRef(false);
 
-  const [isVerifying, setIsVerifying] = useState(true)
-  const [isError, setIsError] = useState(false)
-  const [errorMessage, setErrorMessage] = useState('')
+  const tokenFromUrl = searchParams.get("token");
+  const tokenFromContext = signupRequest?.authFactor?.secretValue;
+  const token = (tokenFromUrl ?? tokenFromContext)?.trim() || null;
+
+  const {
+    data,
+    isError: isQueryError,
+    error: verifyEmailError,
+    isPending,
+    refetch,
+  } = useQuery({
+    ...userServiceVerifyEmailOptions({
+      path: {
+        token: token ?? "",
+      },
+    }),
+    enabled: ready && !!token,
+  });
+
+  const hasToken = !!token;
+  const isVerifying = hasToken && isPending;
+  const isError = !hasToken || isQueryError || (!!data && !(data.verified && data.email));
+  const errorMessage =
+    !hasToken
+      ? t("verification.verificationFailedDefault")
+      : getBackendErrorMessage(verifyEmailError) ??
+        (data && !(data.verified && data.email)
+          ? t("verification.verificationFailedDefault")
+          : t("verification.verificationErrorGeneric"));
 
   useEffect(() => {
-    if (!token) {
-      router.replace(path(formData.email ? '/auth/signup/email/sent' : '/auth/signup/email'))
-      return
-    }
+    if (!data?.verified || !data?.email) return;
+    if (successHandledRef.current) return;
+    successHandledRef.current = true;
 
-    const verifyEmail = async () => {
-      try {
-        setIsVerifying(true)
-        const result = await mockVerifyEmail(token)
+    const rebuilt: v2SignupRequest = {
+      authFactor: {
+        type: "FACTOR_TYPE_EMAIL_VERIFICATION",
+        secretValue: token ?? "",
+        id: data.email,
+      },
+      email: data.email,
+      ...(signupRequest?.phoneNumber && {
+        phoneNumber: signupRequest.phoneNumber,
+      }),
+    };
+    setSignupRequest(rebuilt);
+    successNavigateTimeoutRef.current = setTimeout(() => {
+      successNavigateTimeoutRef.current = null;
+      router.push(path("/auth/signup/password"));
+    }, 1500);
+  }, [data?.verified, data?.email, signupRequest?.phoneNumber, setSignupRequest, router, path]);
 
-        if (result.success && result.userId) {
-          updateFormData({ userId: result.userId })
-          setTimeout(() => {
-            router.push(path('/auth/signup/password'))
-          }, 1500)
-        } else {
-          setIsError(true)
-          setErrorMessage(result.message ?? t('verification.verificationFailedDefault'))
-          setIsVerifying(false)
-        }
-      } catch (error) {
-        setIsError(true)
-        setErrorMessage(t('verification.verificationErrorGeneric'))
-        setIsVerifying(false)
+  useEffect(() => {
+    return () => {
+      if (successNavigateTimeoutRef.current) {
+        clearTimeout(successNavigateTimeoutRef.current);
+        successNavigateTimeoutRef.current = null;
       }
-    }
-
-    verifyEmail()
-  }, [token, router, updateFormData, formData.email, path, t])
+    };
+  }, []);
 
   const handleRetry = () => {
-    if (!token) return
-    setIsError(false)
-    setIsVerifying(true)
-    mockVerifyEmail(token).then((result) => {
-      if (result.success && result.userId) {
-        updateFormData({ userId: result.userId })
-        setTimeout(() => router.push(path('/auth/signup/password')), 1500)
-      } else {
-        setIsError(true)
-        setErrorMessage(result.message ?? t('verification.verificationFailedDefault'))
-        setIsVerifying(false)
-      }
-    })
-  }
+    if (token) refetch();
+  };
 
   const handleBack = () => {
-    router.push(path('/auth/signup/email'))
-  }
-
-  if (!token) {
-    return null
-  }
+    router.push(path(signupRequest?.email ? "/auth/signup/email/sent" : "/auth/signup/email"));
+  };
 
   return (
     <VerificationLoader
-      isLoading={isVerifying && !isError}
+      isLoading={isVerifying && !isQueryError}
       isError={isError}
       errorMessage={errorMessage}
-      successMessage={t('verification.emailVerifiedSuccess')}
-      message={t('verification.verifyingEmail')}
+      successMessage={t("verification.emailVerifiedSuccess")}
+      message={t("verification.verifyingEmail")}
       onRetry={handleRetry}
       onBack={handleBack}
     />
-  )
+  );
 }
 
 function EmailVerifyFallback() {
-  const { t } = useT('translation')
+  const { t } = useT("translation");
   return (
     <VerificationLoader
       isLoading
       isError={false}
       errorMessage=""
       successMessage=""
-      message={t('common.loading')}
+      message={t("common.loading")}
       onRetry={() => {}}
       onBack={() => {}}
     />
-  )
+  );
 }
 
 export default function EmailVerifyPage() {
@@ -108,5 +127,5 @@ export default function EmailVerifyPage() {
     <Suspense fallback={<EmailVerifyFallback />}>
       <EmailVerifyContent />
     </Suspense>
-  )
+  );
 }

@@ -1,28 +1,30 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { SignupLayout } from "@/components/auth/signup-layout";
 import { Button } from "@/components/ui/button";
-import { useSignupContext } from "@/lib/signup-context";
+import { useAuth } from "@/lib/auth-context";
 import { useLocalePath } from "@/lib/use-locale";
 import { useT } from "@/app/i18n/client";
-import { mockSendEmailVerification } from "@/lib/mock-api";
+import { Trans } from "react-i18next";
 import { toast } from "sonner";
+import { useMutation } from "@tanstack/react-query";
+import { userServiceSendSignupEmailVerificationLinkMutation } from "@/@hey_api/users.swagger/@tanstack/react-query.gen";
 
-const LONG_PRESS_MS = 700;
-const MOCK_VERIFY_TOKEN = "mock_skip";
+const INITIAL_RESEND_SECONDS = 30;
 
 export default function EmailSentPage() {
   const router = useRouter();
   const path = useLocalePath();
-  const { t } = useT('translation');
-  const { formData } = useSignupContext();
-  const email = formData.email || "";
+  const { t } = useT("translation");
+  const { signupRequest } = useAuth();
+  const email = signupRequest?.email || "";
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const [resendTimer, setResendTimer] = useState(0);
-  const [isResending, setIsResending] = useState(false);
-  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [prevTimeout, setPrevTimeout] = useState(INITIAL_RESEND_SECONDS);
+  const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
     if (!email) {
@@ -30,54 +32,64 @@ export default function EmailSentPage() {
     }
   }, [email, router, path]);
 
-  const clearLongPressTimer = () => {
-    if (longPressTimerRef.current) {
-      clearTimeout(longPressTimerRef.current);
-      longPressTimerRef.current = null;
+  const startResendCountdown = useCallback((seconds: number) => {
+    if (timerRef.current) clearInterval(timerRef.current);
+    setResendTimer(seconds);
+    timerRef.current = setInterval(() => {
+      setResendTimer((prev) => {
+        if (prev <= 1) {
+          if (timerRef.current) {
+            clearInterval(timerRef.current);
+            timerRef.current = null;
+          }
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  }, []);
+
+  useEffect(
+    () => () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    },
+    []
+  );
+
+  useEffect(() => {
+    startResendCountdown(INITIAL_RESEND_SECONDS);
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, [startResendCountdown]);
+
+  const { mutateAsync: sendEmailVerification } = useMutation({
+    ...userServiceSendSignupEmailVerificationLinkMutation(),
+    onError: () => toast.error(t("auth.failedToResendEmail")),
+  });
+
+  const handleResend = async () => {
+    if (resendTimer > 0 || !email) return;
+    try {
+      await sendEmailVerification({
+        body: { email },
+      });
+      const nextRetryCount = retryCount + 1;
+      const nextTimeout =
+        retryCount === 0
+          ? INITIAL_RESEND_SECONDS
+          : 60 * nextRetryCount + prevTimeout;
+      setRetryCount(nextRetryCount);
+      setPrevTimeout(nextTimeout);
+      startResendCountdown(nextTimeout);
+      toast.success(t("auth.verificationEmailSentAgain"));
+    } catch {
+      // onError already shows toast
     }
-  };
-
-  const handleLongPressStart = () => {
-    clearLongPressTimer();
-    longPressTimerRef.current = setTimeout(() => {
-      longPressTimerRef.current = null;
-      router.push(path(`/auth/signup/email/verify?token=${MOCK_VERIFY_TOKEN}`));
-    }, LONG_PRESS_MS);
-  };
-
-  const handleLongPressEnd = () => {
-    clearLongPressTimer();
   };
 
   const handleGoBackToSignUp = () => {
     router.push(path("/auth/signup/email"));
-  };
-
-  const handleResend = async () => {
-    if (resendTimer > 0) return;
-    setIsResending(true);
-    try {
-      const result = await mockSendEmailVerification(email);
-      if (result.success) {
-        setResendTimer(60);
-        const interval = setInterval(() => {
-          setResendTimer((prev) => {
-            if (prev <= 1) {
-              clearInterval(interval);
-              return 0;
-            }
-            return prev - 1;
-          });
-        }, 1000);
-        toast.success(t('auth.verificationEmailSentAgain'));
-      } else {
-        toast.error(result.message);
-      }
-    } catch (error) {
-      toast.error(t('auth.failedToResendEmail'));
-    } finally {
-      setIsResending(false);
-    }
   };
 
   if (!email) {
@@ -88,45 +100,44 @@ export default function EmailSentPage() {
     <SignupLayout showProgress={false} showBackButton={false}>
       <div className="space-y-6 text-center">
         <div className="space-y-2">
-          <h1 className="text-xl font-bold text-primary">{t('auth.verifyYourEmail')}</h1>
+          <h1 className="text-xl font-bold text-primary">
+            {t("auth.verifyYourEmail")}
+          </h1>
           <p className="text-center text-inactive-text text-base font-medium leading-relaxed">
-            {t('auth.emailSentTo', { email })}
+            <Trans
+              i18nKey="auth.emailSentTo"
+              ns="translation"
+              values={{ email }}
+              components={{ bold: <strong className="font-bold" /> }}
+            />
           </p>
         </div>
 
         <Button
           type="button"
           onClick={handleGoBackToSignUp}
-          onMouseDown={handleLongPressStart}
-          onMouseUp={handleLongPressEnd}
-          onMouseLeave={handleLongPressEnd}
-          onTouchStart={handleLongPressStart}
-          onTouchEnd={handleLongPressEnd}
-          onTouchCancel={handleLongPressEnd}
           className="w-full h-11 bg-primary text-primary-foreground hover:bg-primary/90"
         >
-          {t('auth.goBackToSignUp')}
+          {t("auth.goBackToSignUp")}
         </Button>
 
         <div className="text-base font-medium text-center leading-relaxed">
           <span className="text-muted-foreground">
-            {t('auth.didntReceiveEmail')}{" "}
+            {t("auth.didntReceiveEmail")}{" "}
           </span>
           <button
             type="button"
             onClick={handleResend}
-            disabled={resendTimer > 0 || isResending}
+            disabled={resendTimer > 0}
             className={`font-medium underline ${
-              resendTimer > 0 || isResending
+              resendTimer > 0
                 ? "text-muted-foreground cursor-not-allowed"
                 : "text-secondary"
             }`}
           >
-            {isResending
-              ? t('auth.sending')
-              : resendTimer > 0
-                ? t('auth.resendInSeconds', { count: resendTimer })
-                : t('auth.resend')}
+            {resendTimer > 0
+              ? t("auth.resendInSeconds", { count: resendTimer })
+              : t("auth.resend")}
           </button>
         </div>
       </div>

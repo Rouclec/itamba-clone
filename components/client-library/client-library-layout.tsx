@@ -73,11 +73,11 @@ export function ClientLibraryLayout({
             </SheetContent>
           </Sheet>
 
-          {/* Main: header + scrollable content (including footer) */}
+          {/* Main: header + scrollable body; footer in normal flow at bottom with fixed height */}
           <main className="flex min-w-0 flex-1 flex-col min-h-0">
             {header}
-            <div className="flex-1 overflow-auto bg-[#F9F9F9]">
-              <div className="p-4 md:p-6">{children}</div>
+            <div className="flex-1 min-h-0 overflow-auto bg-[#F9F9F9]">
+              <div className="min-h-[100vh] p-4 md:p-6">{children}</div>
               <LibraryFooter />
             </div>
           </main>

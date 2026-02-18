@@ -3,25 +3,31 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { Phone } from "lucide-react";
+import { Phone, Lock, LockOpen } from "lucide-react";
 import { SignupLayout } from "@/components/auth/signup-layout";
 import { PhoneInput } from "@/components/auth/phone-input";
 import { FormInput } from "@/components/auth/form-input";
 import { Button } from "@/components/ui/button";
 import { LocaleLink } from "@/components/locale-link";
-import { mockSignIn } from "@/lib/mock-api";
 import { useAuth } from "@/lib/auth-context";
 import { useLocalePath } from "@/lib/use-locale";
 import { useT } from "@/app/i18n/client";
 import { toast } from "sonner";
 import type { Country } from "@/lib/countries";
 import { toFullNumber, isValidPhone, normalizePhone } from "@/utils/phone";
+import { useMutation } from "@tanstack/react-query";
+import { userServiceAuthenticateMutation } from "@/@hey_api/users.swagger/@tanstack/react-query.gen";
+import { setAuthorizationHeaders } from "@/utils/inteceptor";
+import { setRefreshTokenInStorage } from "@/utils/auth/session";
+import { fetchUserById } from "@/hooks/use-user";
+import { isAdminRole, DEFAULT_USER_ROLE } from "@/utils/auth/role";
+import type { v2UserRole, v2AdminRole } from "@/@hey_api/users.swagger";
 
 export default function SignInPage() {
   const router = useRouter();
-  const { setUser } = useAuth();
+  const { setUser, setCurrentUser, setUserId } = useAuth();
   const path = useLocalePath();
-  const { t } = useT('translation');
+  const { t } = useT("translation");
   const [method, setMethod] = useState<"phone" | "email">("phone");
 
   const [phone, setPhone] = useState("");
@@ -31,6 +37,7 @@ export default function SignInPage() {
   const [phoneError, setPhoneError] = useState<string | null>(null);
   const [emailError, setEmailError] = useState<string | null>(null);
   const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   const validatePhone = (value: string): boolean => {
@@ -63,6 +70,13 @@ export default function SignInPage() {
     return true;
   };
 
+  const { mutateAsync: authenticate } = useMutation({
+    ...userServiceAuthenticateMutation(),
+    onError: (err) => {
+      toast.error(err?.response?.data?.message ?? t("auth.errorOccurred"));
+    },
+  });
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -72,23 +86,54 @@ export default function SignInPage() {
       if (!validateEmail(email) || !validatePassword()) return;
     }
 
-    setIsLoading(true);
-    const identifier =
+    const factorId =
       method === "phone"
-        ? (normalizePhone(dialCode, phone) ?? toFullNumber(dialCode, phone))
+        ? (normalizePhone(dialCode, phone) ?? toFullNumber(dialCode, phone) ?? "")
         : email.trim();
-    try {
-      const result = await mockSignIn(identifier, password, method);
+    const factorType =
+      method === "phone" ? "FACTOR_TYPE_PHONE_PASSWORD" : "FACTOR_TYPE_EMAIL_PASSWORD";
 
-      if (result.success && result.role && result.redirectUrl) {
-        setUser({ role: result.role, identifier });
-        toast.success(result.message);
-        setTimeout(() => router.push(path(result.redirectUrl!)), 500);
-      } else {
-        toast.error(result.message);
+    setIsLoading(true);
+    try {
+      const data = await authenticate({
+        body: {
+          authFactors: [
+            { type: factorType, id: factorId, secretValue: password },
+          ],
+        },
+      });
+
+      const accessToken = data?.tokens?.accessToken ?? "";
+      const refreshToken = data?.tokens?.refreshToken;
+      const userId = data?.userId;
+
+      if (!accessToken || !userId) {
+        toast.error(t("auth.errorOccurred"));
+        return;
       }
+
+      setAuthorizationHeaders(accessToken);
+      if (refreshToken) setRefreshTokenInStorage(refreshToken);
+      setUserId(userId);
+
+      const freshUser = await fetchUserById(userId);
+      if (!freshUser) {
+        toast.error(t("auth.errorOccurred"));
+        return;
+      }
+
+      setCurrentUser(freshUser);
+      const role = (freshUser.userRole ?? DEFAULT_USER_ROLE) as
+        | v2UserRole
+        | v2AdminRole;
+      const identifier =
+        freshUser.email ?? freshUser.userId ?? freshUser.telephone ?? "";
+      setUser({ role, identifier });
+
+      toast.success(t("auth.signIn"));
+      router.push(path(isAdminRole(role) ? "/admin" : "/client"));
     } catch {
-      toast.error(t('auth.errorOccurred'));
+      // onError toast handled by mutation
     } finally {
       setIsLoading(false);
     }
@@ -114,6 +159,8 @@ export default function SignInPage() {
         password.length >= 6 &&
         !emailError &&
         !passwordError;
+
+  
 
   return (
     <SignupLayout showProgress={false} onBack={() => router.back()}>
@@ -155,19 +202,32 @@ export default function SignInPage() {
           />
         )}
 
-        <FormInput
-          label={t('auth.password')}
-          type="password"
-          value={password}
-          onChange={(e) => {
-            setPassword(e.target.value);
-            if (passwordError) setPasswordError(null);
-          }}
-          onBlur={validatePassword}
-          error={passwordError ?? undefined}
-          placeholder="••••••••"
-          required
-        />
+        <div className="relative">
+          <FormInput
+            label={t("auth.password")}
+            type={showPassword ? "text" : "password"}
+            value={password}
+            onChange={(e) => {
+              setPassword(e.target.value);
+              if (passwordError) setPasswordError(null);
+            }}
+            onBlur={validatePassword}
+            error={passwordError ?? undefined}
+            placeholder="********"
+            required
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword(!showPassword)}
+            className="absolute right-3 top-[38px] cursor-pointer text-muted-foreground hover:text-foreground"
+          >
+            {showPassword ? (
+              <LockOpen className="w-4 h-4" />
+            ) : (
+              <Lock className="w-4 h-4" />
+            )}
+          </button>
+        </div>
 
         <Button
           type="submit"

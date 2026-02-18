@@ -8,22 +8,25 @@ import { FormInput } from "@/components/auth/form-input";
 import { Button } from "@/components/ui/button";
 import { LocaleLink } from "@/components/locale-link";
 import { useMemo } from "react";
-import { useSignupContext } from "@/lib/signup-context";
 import { useLocalePath } from "@/lib/use-locale";
 import { useT } from "@/app/i18n/client";
 import { createEmailSchema, type EmailFormData } from "@/lib/form-validators";
 import { mockSendEmailVerification } from "@/lib/mock-api";
 import { toast } from "sonner";
 import { z } from "zod";
+import { useMutation } from "@tanstack/react-query";
+import { userServiceSendSignupEmailVerificationLinkMutation } from "@/@hey_api/users.swagger/@tanstack/react-query.gen";
+import { v2SignupRequest } from "@/@hey_api/users.swagger";
+import { useAuth } from "@/lib/auth-context";
 
 export default function EmailSignupPage() {
   const router = useRouter();
   const path = useLocalePath();
-  const { t } = useT('translation');
-  const { formData, updateFormData } = useSignupContext();
+  const { t } = useT("translation");
+  const { signupRequest, setSignupRequest } = useAuth();
   const emailSchema = useMemo(() => createEmailSchema(t), [t]);
 
-  const [email, setEmail] = useState(formData.email || "");
+  const [email, setEmail] = useState(signupRequest?.email || "");
   const [emailError, setEmailError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -57,21 +60,13 @@ export default function EmailSignupPage() {
 
     setIsLoading(true);
     try {
-      const result = await mockSendEmailVerification(email);
-
-      if (result.success) {
-        updateFormData({ email, userId: "temp_user" });
-        toast.success(result.message);
-
-        // Redirect to "email sent" page (check your inbox)
-        setTimeout(() => {
-          router.push(path("/auth/signup/email/sent"));
-        }, 500);
-      } else {
-        toast.error(result.message);
-      }
+      await sendEmailVerification({
+        body: {
+          email: email,
+        },
+      });
     } catch (error) {
-      toast.error(t('auth.errorOccurred'));
+      console.error({ error });
     } finally {
       setIsLoading(false);
     }
@@ -83,24 +78,43 @@ export default function EmailSignupPage() {
 
   const isFormValid = email && !emailError;
 
+  const { mutateAsync: sendEmailVerification } = useMutation({
+    ...userServiceSendSignupEmailVerificationLinkMutation(),
+    onSuccess: () => {
+      const signupRequest: v2SignupRequest = {
+        authFactor: {
+          type: "FACTOR_TYPE_EMAIL_VERIFICATION",
+          id: email,
+        },
+        email,
+      };
+      setSignupRequest(signupRequest);
+      toast.success(t("auth.emailVerificationSent"));
+      router.push(path(`/auth/signup/email/sent`));
+    },
+    onError: (error) => {
+      toast.error(error?.response?.data?.message ?? t("auth.errorOccurred"));
+    },
+  });
+
   return (
     <SignupLayout currentStep={1} totalSteps={4} onBack={handleBack}>
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Header */}
         <div>
           <h1 className="text-xl font-semibold text-primary text-center">
-            {t('auth.signUpToItamba')}
+            {t("auth.signUpToItamba")}
           </h1>
           <p className="text-center text-inactive-text text-base font-medium leading-relaxed">
-            {t('auth.signUpSubtitle')}
+            {t("auth.signUpSubtitle")}
           </p>
         </div>
 
         {/* Email Input */}
         <FormInput
-          label={t('auth.emailAddress')}
+          label={t("auth.emailAddress")}
           type="email"
-          placeholder="Mariebliss@gmail.com"
+          placeholder="mariebliss@gmail.com"
           value={email}
           onChange={handleEmailChange}
           onBlur={() => validateEmail(email)}
@@ -121,10 +135,10 @@ export default function EmailSignupPage() {
           {isLoading ? (
             <>
               <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              <span>{t('auth.verifying')}</span>
+              <span>{t("auth.verifying")}</span>
             </>
           ) : (
-            t('auth.verifyEmail')
+            t("auth.verifyEmail")
           )}
         </button>
 
@@ -134,7 +148,9 @@ export default function EmailSignupPage() {
             <div className="w-full border-t border-border" />
           </div>
           <div className="relative flex justify-center text-xs">
-            <span className="px-2 bg-background text-muted-foreground">{t('common.or')}</span>
+            <span className="px-2 bg-background text-muted-foreground">
+              {t("common.or")}
+            </span>
           </div>
         </div>
 
@@ -142,43 +158,40 @@ export default function EmailSignupPage() {
         <Button
           type="button"
           variant="secondary"
-          onClick={() => {
-            updateFormData({ verificationMethod: "phone" });
-            router.push(path("/auth/signup/phone"));
-          }}
+          onClick={() => router.push(path("/auth/signup"))}
           className="w-full h-11"
         >
           <Phone className="w-5 h-5 shrink-0" />
-          {t('auth.continueWithPhone')}
+          {t("auth.continueWithPhone")}
         </Button>
 
         <div className="flex flex-col gap-4">
           {/* Terms */}
           <p className="text-base font-medium text-center leading-relaxed">
-            {t('auth.byProceeding')}{" "}
+            {t("auth.byProceeding")}{" "}
             <LocaleLink
               href="#"
               className="text-secondary hover:underline font-medium"
             >
-              {t('common.terms')}
+              {t("common.terms")}
             </LocaleLink>{" "}
             and{" "}
             <LocaleLink
               href="#"
               className="text-secondary hover:underline font-medium"
             >
-              {t('common.privacyPolicy')}
+              {t("common.privacyPolicy")}
             </LocaleLink>
           </p>
 
           {/* Sign in link */}
           <p className="text-base font-medium text-center">
-            {t('auth.alreadyHaveAccount')}{" "}
+            {t("auth.alreadyHaveAccount")}{" "}
             <LocaleLink
               href="/auth/signin"
               className="text-secondary hover:underline font-medium"
             >
-              {t('auth.signIn')}
+              {t("auth.signIn")}
             </LocaleLink>
           </p>
         </div>
