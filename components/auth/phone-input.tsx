@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import { ChevronDown } from "lucide-react";
+import { MdKeyboardArrowDown } from "react-icons/md";
 import { countries, defaultCountry, type Country } from "@/lib/countries";
 import { toFullNumber, parsePhone, formatNational } from "@/utils/phone";
 
@@ -115,7 +115,7 @@ export function PhoneInput({
             <span className="text-sm font-medium text-foreground">
               {selectedCountry.dial_code}
             </span>
-            <ChevronDown
+            <MdKeyboardArrowDown
               className={`w-4 h-4 text-muted-foreground transition-transform ${isOpen ? "rotate-180" : ""}`}
             />
           </button>

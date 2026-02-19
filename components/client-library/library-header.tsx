@@ -1,7 +1,8 @@
 'use client'
 
 import { useRouter, usePathname } from 'next/navigation'
-import { Globe, ChevronDown, Check, Settings, LogOut, ChevronRight, UserPen } from 'lucide-react'
+import { Check, Settings, LogOut, ChevronRight, UserPen } from 'lucide-react'
+import { MdLanguage, MdKeyboardArrowDown } from 'react-icons/md'
 import { useAuth } from '@/lib/auth-context'
 import { useT } from '@/app/i18n/client'
 import { LocaleLink } from '@/components/locale-link'
@@ -45,7 +46,7 @@ export function LibraryHeader() {
         className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm text-[#64748B] hover:bg-hover hover:text-foreground uppercase"
         aria-label={locale === 'fr' ? 'Switch to English' : 'Switch to French'}
       >
-        <Globe className="size-4" />
+        <MdLanguage className="size-4" />
         <span>{locale === 'fr' ? 'FR' : 'EN'}</span>
       </button>
       <DropdownMenu>
@@ -66,7 +67,7 @@ export function LibraryHeader() {
               </div>
               <div className="text-xs text-muted-foreground">{t('client.freePlan')}</div>
             </div>
-            <ChevronDown className="size-4 shrink-0 text-muted-foreground" />
+            <MdKeyboardArrowDown className="size-4 shrink-0 text-muted-foreground" />
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent

@@ -1,29 +1,44 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import {
-  FileText,
-  FolderOpen,
-  LayoutGrid,
-  BookMarked,
-  HelpCircle,
-  Settings,
-  Star,
-  Bookmark,
-  StickyNote,
-  ChevronDown,
-  Lock,
-} from 'lucide-react'
+  MdOutlineLocalLibrary,
+  MdOutlineTextSnippet,
+  MdOutlineCategory,
+  MdOutlineWidgets,
+  MdOutlineReceiptLong,
+  MdOutlineDashboard,
+  MdOutlineReceipt,
+  MdStarBorder,
+  MdLockOutline,
+  MdNotes,
+  MdBookmarkBorder,
+  MdOutlineFolder,
+  MdHelpOutline,
+  MdOutlineSettings,
+  MdKeyboardArrowDown,
+} from 'react-icons/md'
 import { useT } from '@/app/i18n/client'
 import { LocaleLink } from '@/components/locale-link'
 import { cn } from '@/lib/utils'
 
 const SIDEBAR_WIDTH = '16rem'
 
+type SectionKey = 'library' | 'myDashboard'
+
 export function LibrarySidebarContent() {
   const { t } = useT('translation')
   const documentsActive = true // Documents is the current page
+  const [openSections, setOpenSections] = useState<Record<SectionKey, boolean>>({
+    library: true,
+    myDashboard: true,
+  })
+
+  const toggleSection = (key: SectionKey) => {
+    setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }))
+  }
 
   const navParentClass =
     'flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium justify-between'
@@ -69,17 +84,23 @@ export function LibrarySidebarContent() {
         <div className="flex flex-col gap-0.5">
           <button
             type="button"
+            onClick={() => toggleSection('library')}
             className={cn(
               navParentClass,
               documentsActive ? navParentActiveClass : navParentInactiveClass
             )}
+            aria-expanded={openSections.library}
           >
             <span className="flex items-center gap-2">
-              <LayoutGrid className="size-4" />
+              <MdOutlineLocalLibrary className="size-4" />
               {t('librarySidebar.library')}
             </span>
-            <ChevronDown className="size-4 shrink-0" />
+            <MdKeyboardArrowDown
+              className={cn('size-4 shrink-0 transition-transform', !openSections.library && '-rotate-90')}
+              aria-hidden
+            />
           </button>
+          {openSections.library && (
           <div className={childGroupClass}>
             <Link
               href="#"
@@ -88,31 +109,32 @@ export function LibrarySidebarContent() {
                 documentsActive ? navChildActiveClass : navChildInactiveClass
               )}
             >
-              <FileText className="size-4" />
+              <MdOutlineTextSnippet className="size-4" />
               {t('librarySidebar.documents')}
             </Link>
-            <Link href="#" className={cn(navChildClass, navChildInactiveClass, 'justify-between')}>
+            <LocaleLink href="/client/categories" className={cn(navChildClass, navChildInactiveClass, 'justify-between')}>
               <span className="flex items-center gap-2">
-                <FolderOpen className="size-4" />
+                <MdOutlineCategory className="size-4" />
                 {t('librarySidebar.catalogues')}
               </span>
-              <Lock className="size-3.5 text-muted-foreground" />
-            </Link>
+              <MdLockOutline className="size-3.5 text-muted-foreground" />
+            </LocaleLink>
             <Link href="#" className={cn(navChildClass, navChildInactiveClass, 'justify-between')}>
               <span className="flex items-center gap-2">
-                <BookMarked className="size-4" />
+                <MdOutlineWidgets className="size-4" />
                 {t('librarySidebar.types')}
               </span>
-              <Lock className="size-3.5 text-muted-foreground" />
+              <MdLockOutline className="size-3.5 text-muted-foreground" />
             </Link>
             <Link href="#" className={cn(navChildClass, navChildInactiveClass, 'justify-between')}>
               <span className="flex items-center gap-2">
-                <FolderOpen className="size-4" />
+                <MdOutlineReceiptLong className="size-4" />
                 {t('librarySidebar.collections')}
               </span>
-              <Lock className="size-3.5 text-muted-foreground" />
+              <MdLockOutline className="size-3.5 text-muted-foreground" />
             </Link>
           </div>
+          )}
         </div>
       </div>
 
@@ -122,40 +144,50 @@ export function LibrarySidebarContent() {
           {t('librarySidebar.myWorkspace')}
         </p>
         <div className="flex flex-col gap-0.5">
-          <button type="button" className={cn(navParentClass, navParentInactiveClass)}>
+          <button
+            type="button"
+            onClick={() => toggleSection('myDashboard')}
+            className={cn(navParentClass, navParentInactiveClass)}
+            aria-expanded={openSections.myDashboard}
+          >
             <span className="flex items-center gap-2">
-              <LayoutGrid className="size-4" />
+              <MdOutlineDashboard className="size-4" />
               {t('librarySidebar.myDashboard')}
             </span>
-            <ChevronDown className="size-4 shrink-0" />
+            <MdKeyboardArrowDown
+              className={cn('size-4 shrink-0 transition-transform', !openSections.myDashboard && '-rotate-90')}
+              aria-hidden
+            />
           </button>
+          {openSections.myDashboard && (
           <div className={childGroupClass}>
             <Link href="#" className={cn(navChildClass, navChildInactiveClass)}>
-              <FileText className="size-4" />
+              <MdOutlineReceipt className="size-4" />
               {t('librarySidebar.recentlyRead')}
             </Link>
             <Link href="#" className={cn(navChildClass, navChildInactiveClass, 'justify-between')}>
               <span className="flex items-center gap-2">
-                <Star className="size-4" />
+                <MdStarBorder className="size-4" />
                 {t('librarySidebar.favoriteDocuments')}
               </span>
-              <Lock className="size-3.5 text-muted-foreground" />
+              <MdLockOutline className="size-3.5 text-muted-foreground" />
             </Link>
           </div>
+          )}
           <Link href="#" className={navSiblingClass}>
-            <StickyNote className="size-4" />
+            <MdNotes className="size-4" />
             {t('librarySidebar.notes')}
           </Link>
           <Link href="#" className={navSiblingClass}>
-            <Bookmark className="size-4" />
+            <MdBookmarkBorder className="size-4" />
             {t('librarySidebar.bookmarkedArticles')}
           </Link>
           <Link href="#" className={cn(navSiblingClass, 'justify-between')}>
             <span className="flex items-center gap-2">
-              <FolderOpen className="size-4" />
+              <MdOutlineFolder className="size-4" />
               {t('librarySidebar.folders')}
             </span>
-            <Lock className="size-3.5 text-muted-foreground" />
+            <MdLockOutline className="size-3.5 text-muted-foreground" />
           </Link>
         </div>
       </div>
@@ -163,11 +195,11 @@ export function LibrarySidebarContent() {
       {/* Footer - no top border */}
       <div className="mt-auto shrink-0 p-3">
         <Link href="#" className={cn(navSiblingClass, 'w-full')}>
-          <HelpCircle className="size-4" />
+          <MdHelpOutline className="size-4" />
           {t('client.getHelp')}
         </Link>
         <Link href="#" className={cn(navSiblingClass, 'w-full')}>
-          <Settings className="size-4" />
+          <MdOutlineSettings className="size-4" />
           {t('client.settings')}
         </Link>
       </div>

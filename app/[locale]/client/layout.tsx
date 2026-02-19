@@ -7,6 +7,7 @@ import { useLocalePath } from '@/lib/use-locale'
 import { useT } from '@/app/i18n/client'
 import { ClientLibraryLayout } from '@/components/client-library/client-library-layout'
 import { LibraryHeader } from '@/components/client-library/library-header'
+import { GuestFirstLoginModal } from '@/components/client-library/guest-first-login-modal'
 
 export default function ClientLayout({
   children,
@@ -38,8 +39,11 @@ export default function ClientLayout({
   }
 
   return (
-    <ClientLibraryLayout header={<LibraryHeader />}>
-      {children}
-    </ClientLibraryLayout>
+    <>
+      <GuestFirstLoginModal />
+      <ClientLibraryLayout header={<LibraryHeader />}>
+        {children}
+      </ClientLibraryLayout>
+    </>
   )
 }

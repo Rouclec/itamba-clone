@@ -3,10 +3,10 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* Merriweather variable font (supports all weights; default 300 for now) */
+/* Merriweather variable font – one file, weights 200–900 (e.g. font-light, font-bold) */
 @font-face {
   font-family: 'Merriweather';
-  src: url('/assets/fonts/Merriweather/Merriweather-VariableFont_opsz%2Cwdth%2Cwght.ttf') format('truetype');
+  src: url('/assets/fonts/Merriweather-Variable.ttf') format('truetype');
   font-weight: 200 900;
   font-style: normal;
   font-display: swap;
@@ -36,6 +36,8 @@
   /* Secondary: Purple/Magenta (#9A33FD) - Links and accents */
   --secondary: oklch(0.56 0.28 300);
   --secondary-foreground: oklch(1 0 0);
+  /* Tertiary: same purple (#9A33FD) - subheadings, emphasis */
+  --tertiary: #9A33FD;
   
   /* Body text (#082059) – default text color */
   --body-text: #082059;
@@ -50,6 +52,8 @@
   /* Accent: Amber/Yellow (#F59E0B) - Progress indicators */
   --accent: oklch(0.72 0.15 85);
   --accent-foreground: oklch(0.14 0 0);
+  /* Accent yellow (#FFCD00) - Restriction modal, highlights, badges */
+  --accent-yellow: #FFCD00;
   
   --destructive: oklch(0.577 0.245 27.325);
   --destructive-foreground: oklch(1 0 0);
@@ -97,10 +101,12 @@
   --primary-foreground: oklch(0.205 0 0);
   --secondary: oklch(0.269 0 0);
   --secondary-foreground: oklch(0.985 0 0);
+  --tertiary: #9A33FD;
   --muted: oklch(0.269 0 0);
   --muted-foreground: oklch(0.708 0 0);
   --accent: oklch(0.269 0 0);
   --accent-foreground: oklch(0.985 0 0);
+  --accent-yellow: #FFCD00;
   --destructive: oklch(0.396 0.141 25.723);
   --destructive-foreground: oklch(0.637 0.237 25.331);
   --border: oklch(0.269 0 0);
@@ -145,6 +151,8 @@
   --color-inactive-text: var(--inactive-text);
   --color-surface: var(--surface);
   --color-hover: var(--hover);
+  --color-accent-yellow: var(--accent-yellow);
+  --color-tertiary: var(--tertiary);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
@@ -171,8 +179,14 @@
   * {
     @apply border-border outline-ring/50;
   }
+  html {
+    overflow-x: hidden;
+  }
   body {
     @apply bg-background text-foreground;
+    overflow-x: hidden;
+    /* Prevent horizontal page scroll on mobile (e.g. iPhone X); tables scroll in their own container */
+    max-width: 100%;
   }
   button:not(:disabled) {
     cursor: pointer;

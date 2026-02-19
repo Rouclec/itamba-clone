@@ -1,7 +1,13 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Search, LayoutGrid, List, FileText, Star, Globe } from "lucide-react";
+import { Search, LayoutGrid, List } from "lucide-react";
+import {
+  MdOutlineTextSnippet,
+  MdStarBorder,
+  MdLanguage,
+  MdInsertDriveFile,
+} from "react-icons/md";
 import { useT } from "@/app/i18n/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -42,6 +48,11 @@ import type {
   v2DocumentType,
 } from "@/@hey_api/documentsmaterials.swagger/types.gen";
 import { useAuth } from "@/lib/auth-context";
+import { useRestrictions } from "@/hooks/use-restrictions";
+import {
+  RestrictionModal,
+  getRestrictionCopy,
+} from "@/components/restriction-modal";
 import moment from "moment";
 
 const PAGE_SIZE = 9;
@@ -65,33 +76,16 @@ const DECADES = [
  */
 function getPaginationSlots(
   page: number,
-  totalPages: number
+  totalPages: number,
 ): (number | "ellipsis")[] {
   if (totalPages <= 7) {
     return Array.from({ length: totalPages }, (_, i) => i + 1);
   }
   if (page <= 4) {
-    return [
-      1,
-      2,
-      3,
-      4,
-      "ellipsis",
-      totalPages - 2,
-      totalPages - 1,
-      totalPages,
-    ];
+    return [1, 2, 3, 4, "ellipsis", totalPages - 2, totalPages - 1, totalPages];
   }
   if (page >= totalPages - 2) {
-    return [
-      1,
-      2,
-      3,
-      "ellipsis",
-      totalPages - 2,
-      totalPages - 1,
-      totalPages,
-    ];
+    return [1, 2, 3, "ellipsis", totalPages - 2, totalPages - 1, totalPages];
   }
   return [1, "ellipsis", page - 1, page, page + 1, "ellipsis", totalPages];
 }
@@ -136,7 +130,7 @@ function DocumentCard({
       <CardContent className="flex flex-1 flex-col p-0">
         <div className="flex flex-row items-stretch overflow-hidden gap-2">
           <div className="shrink-0">
-            <FileText className="size-5 shrink-0 text-muted-foreground" />
+            <MdOutlineTextSnippet className="size-5 shrink-0 text-muted-foreground" />
           </div>
           <div className="min-w-0 flex-1">
             <span className="min-w-0 truncate text-base text-body-text font-bold">
@@ -146,11 +140,13 @@ function DocumentCard({
               {doc.title}
             </p>
             <div className="mt-10 flex flex-1 items-center gap-4 text-xs font-normal text-inactive-text">
-              <span>
+              <span className="flex items-center gap-0.5">
+                <MdInsertDriveFile className="size-3.5" />
                 {doc.articles} {t("client.articles")}
               </span>
               <span className="flex items-center gap-0.5">
-                <Globe size={12} /> {doc.language.slice(0, 2).toUpperCase()}
+                <MdLanguage className="size-3.5" />{" "}
+                {doc.language.slice(0, 2).toUpperCase()}
               </span>
               <span className="rounded-full bg-surface px-2.5 py-0.5 text-body-text">
                 {doc.type.charAt(0).toUpperCase() + doc.type.slice(1)}
@@ -162,7 +158,7 @@ function DocumentCard({
               type="button"
               className="shrink-0  bg-hover p-1 rounded-sm text-primary hover:text-foreground"
             >
-              <Star className="size-4" />
+              <MdStarBorder className="size-4" />
             </button>
             <Button
               size="sm"
@@ -180,32 +176,35 @@ function DocumentCard({
 function DocumentTableRow({
   doc,
   t,
+  index,
 }: {
   doc: DocumentDisplayItem;
   t: (k: string) => string;
+  index: number;
 }) {
+  const isOdd = index % 2 === 1;
   return (
-    <TableRow>
-      <TableCell>
+    <TableRow
+      className={cn(
+        "border-0",
+        isOdd ? "bg-[#FAFAFA]" : "bg-white",
+      )}
+    >
+      <TableCell className="px-4 py-7">
         <div className="flex items-center gap-2">
-          <FileText className="size-4 text-muted-foreground" />
+          <MdOutlineTextSnippet className="size-4 text-muted-foreground" />
           {doc.reference}
         </div>
       </TableCell>
-      <TableCell className="max-w-xs truncate">{doc.title}</TableCell>
-      <TableCell>
+      <TableCell className="max-w-xs truncate px-4 py-7">{doc.title}</TableCell>
+      <TableCell className="px-4 py-7">
         <span className="rounded-md bg-surface px-1.5 py-0.5 text-xs">
           {doc.type}
         </span>
       </TableCell>
-      <TableCell>{doc.articles}</TableCell>
-      <TableCell>{moment(doc.issued).format("MMM DD, YYYY")}</TableCell>
-      <TableCell className="uppercase">{doc.language}</TableCell>
-      <TableCell className="text-right">
-        <Button size="sm" className="bg-surface text-foreground hover:bg-hover">
-          {t("client.view")}
-        </Button>
-      </TableCell>
+      <TableCell className="px-4 py-7">{doc.articles}</TableCell>
+      <TableCell className="px-4 py-7">{moment(doc.issued).format("MMM DD, YYYY")}</TableCell>
+      <TableCell className="uppercase text-right px-4 py-7">{doc.language}</TableCell>
     </TableRow>
   );
 }
@@ -213,7 +212,12 @@ function DocumentTableRow({
 export function LibraryPageContent() {
   const { t, i18n } = useT("translation");
   const [view, setView] = useState<"grid" | "list">("grid");
+  const [showDocumentsRestriction, setShowDocumentsRestriction] =
+    useState(false);
   const { currentUser } = useAuth();
+  const role = currentUser?.userRole ?? undefined;
+  const userId = currentUser?.userId ?? undefined;
+  const { documentsLimit } = useRestrictions(role, userId);
   const lang = i18n?.language ?? i18n?.resolvedLanguage ?? "en";
   const sortByTitle = lang.startsWith("fr")
     ? "SORT_BY_TITLE_FR"
@@ -300,7 +304,7 @@ export function LibraryPageContent() {
       page,
       search,
       sortByTitle,
-    ]
+    ],
   );
 
   const { data: listData, isLoading } = useQuery({
@@ -310,22 +314,40 @@ export function LibraryPageContent() {
 
   const documents = useMemo(
     () => (listData?.documents ?? []).map(mapDocumentToDisplay),
-    [listData?.documents]
+    [listData?.documents],
   );
 
   const totalItems = useMemo(
     () => parseInt(listData?.statistics?.totalItems ?? "0", 10),
-    [listData?.statistics?.totalItems]
+    [listData?.statistics?.totalItems],
   );
   const totalPages = useMemo(
     () =>
       Math.max(
         1,
         Math.ceil(totalItems / PAGE_SIZE) ||
-          parseInt(listData?.statistics?.pageCount ?? "1", 10)
+          parseInt(listData?.statistics?.pageCount ?? "1", 10),
       ),
-    [totalItems, listData?.statistics?.pageCount]
+    [totalItems, listData?.statistics?.pageCount],
   );
+
+  const maxAccessiblePage = useMemo(() => {
+    if (documentsLimit < 0) return totalPages;
+    return Math.min(totalPages, Math.max(1, Math.ceil(documentsLimit / PAGE_SIZE)));
+  }, [documentsLimit, totalPages]);
+
+  const documentsRestrictionCopy = useMemo(
+    () => getRestrictionCopy("documents-limit", t, documentsLimit < 0 ? undefined : documentsLimit),
+    [t, documentsLimit],
+  );
+
+  const handlePageChange = (targetPage: number) => {
+    if (targetPage > maxAccessiblePage) {
+      setShowDocumentsRestriction(true);
+      return;
+    }
+    setPage(targetPage);
+  };
 
   return (
     <div className="space-y-6">
@@ -390,8 +412,8 @@ export function LibraryPageContent() {
                   disabled={!cat.categoryId}
                 >
                   {lang.startsWith("fr")
-                    ? cat.titles?.fr ?? cat.titles?.en ?? ""
-                    : cat.titles?.en ?? cat.titles?.fr ?? ""}
+                    ? (cat.titles?.fr ?? cat.titles?.en ?? "")
+                    : (cat.titles?.en ?? cat.titles?.fr ?? "")}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -417,26 +439,21 @@ export function LibraryPageContent() {
                   disabled={!type.id}
                 >
                   {lang.startsWith("fr")
-                    ? type.titles?.fr ?? type.titles?.en ?? ""
-                    : type.titles?.en ?? type.titles?.fr ?? ""}
+                    ? (type.titles?.fr ?? type.titles?.en ?? "")
+                    : (type.titles?.en ?? type.titles?.fr ?? "")}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
           <Select
-            value={
-              selectedDecade
-                ? `${selectedDecade.start}`
-                : "all"
-            }
+            value={selectedDecade ? `${selectedDecade.start}` : "all"}
             onValueChange={(value) => {
               if (value === "all") {
                 setSelectedDecade(null);
               } else {
-                const decade = DECADES.find(
-                  (d) => String(d.start) === value
-                );
-                if (decade) setSelectedDecade({ start: decade.start, end: decade.end });
+                const decade = DECADES.find((d) => String(d.start) === value);
+                if (decade)
+                  setSelectedDecade({ start: decade.start, end: decade.end });
               }
               setPage(1);
             }}
@@ -468,36 +485,37 @@ export function LibraryPageContent() {
             </p>
           ) : (
             documents.map((doc, index) => (
-              <DocumentCard
-                key={doc.id || `doc-${index}`}
-                doc={doc}
-                t={t}
-              />
+              <DocumentCard key={doc.id || `doc-${index}`} doc={doc} t={t} />
             ))
           )}
         </div>
       ) : (
-        <div className="rounded-md border border-border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{t("client.reference")}</TableHead>
-                <TableHead>{t("client.title")}</TableHead>
-                <TableHead>{t("client.type")}</TableHead>
-                <TableHead>{t("client.articles")}</TableHead>
-                <TableHead>{t("client.issued")}</TableHead>
-                <TableHead className="w-16">{t("client.language")}</TableHead>
-                <TableHead className="text-right w-[90px]">
-                  {t("client.view")}
+        <div className="rounded-lg overflow-hidden">
+          <Table className="border-0">
+            <TableHeader className="[&_tr]:border-0">
+              <TableRow className="border-0 bg-surface">
+                <TableHead className="font-bold p-4">
+                  {t("client.reference")}
+                </TableHead>
+                <TableHead className="font-bold p-4">{t("client.title")}</TableHead>
+                <TableHead className="font-bold p-4">{t("client.type")}</TableHead>
+                <TableHead className="font-bold p-4">
+                  {t("client.articles")}
+                </TableHead>
+                <TableHead className="font-bold p-4">
+                  {t("client.issued")}
+                </TableHead>
+                <TableHead className="font-bold items-center justify-end flex p-4">
+                  <MdLanguage className="size-4 text-body-text font-bold" />
                 </TableHead>
               </TableRow>
             </TableHeader>
-            <TableBody>
+            <TableBody className="[&_tr]:border-0">
               {documents.length === 0 ? (
-                <TableRow>
+                <TableRow className="border-0 bg-white">
                   <TableCell
                     colSpan={7}
-                    className="text-muted-foreground py-8 text-center"
+                    className="text-muted-foreground text-center px-4 py-7"
                   >
                     {t("client.noDocuments")}
                   </TableCell>
@@ -508,6 +526,7 @@ export function LibraryPageContent() {
                     key={doc.id || `doc-${index}`}
                     doc={doc}
                     t={t}
+                    index={index}
                   />
                 ))
               )}
@@ -517,14 +536,14 @@ export function LibraryPageContent() {
       )}
 
       <div className="flex justify-end">
-        <Pagination>
+        <Pagination className="w-full justify-end">
           <PaginationContent>
             <PaginationItem>
               <PaginationPrevious
                 href="#"
                 onClick={(e) => {
                   e.preventDefault();
-                  if (page > 1) setPage((p) => p - 1);
+                  if (page > 1) handlePageChange(page - 1);
                 }}
                 aria-disabled={page <= 1}
                 className={cn(page <= 1 && "pointer-events-none opacity-50")}
@@ -541,31 +560,44 @@ export function LibraryPageContent() {
                     href="#"
                     onClick={(e) => {
                       e.preventDefault();
-                      setPage(slot);
+                      handlePageChange(slot);
                     }}
                     isActive={page === slot}
                   >
                     {slot}
                   </PaginationLink>
                 </PaginationItem>
-              )
+              ),
             )}
             <PaginationItem>
               <PaginationNext
                 href="#"
                 onClick={(e) => {
                   e.preventDefault();
-                  if (page < totalPages) setPage((p) => p + 1);
+                  if (page < totalPages) handlePageChange(page + 1);
                 }}
-                aria-disabled={page >= totalPages}
+                aria-disabled={page >= maxAccessiblePage}
                 className={cn(
-                  page >= totalPages && "pointer-events-none opacity-50",
+                  page >= maxAccessiblePage &&
+                    "pointer-events-none opacity-50",
                 )}
               />
             </PaginationItem>
           </PaginationContent>
         </Pagination>
       </div>
+
+      <RestrictionModal
+        open={showDocumentsRestriction}
+        onOpenChange={setShowDocumentsRestriction}
+        variant="documents-limit"
+        limit={documentsLimit < 0 ? undefined : documentsLimit}
+        titleLine1={documentsRestrictionCopy.titleLine1}
+        titleLine2={documentsRestrictionCopy.titleLine2}
+        body={documentsRestrictionCopy.body}
+        ctaText={documentsRestrictionCopy.ctaText}
+        imageOverlay={documentsRestrictionCopy.imageOverlay}
+      />
     </div>
   );
 }

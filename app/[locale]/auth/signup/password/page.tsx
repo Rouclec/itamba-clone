@@ -11,7 +11,7 @@ import {
 } from "@/lib/form-validators";
 import { toast } from "sonner";
 import { z } from "zod";
-import { Lock, LockOpen } from "lucide-react";
+import { MdLockOutline, MdLockOpen } from "react-icons/md";
 import { useAuth } from "@/lib/auth-context";
 
 export default function PasswordPage() {
@@ -135,9 +135,9 @@ export default function PasswordPage() {
             className="absolute right-3 top-[38px]  cursor-pointer text-muted-foreground hover:text-foreground"
           >
             {showPassword ? (
-              <LockOpen className="w-4 h-4" />
+              <MdLockOpen className="w-4 h-4" />
             ) : (
-              <Lock className="w-4 h-4" />
+              <MdLockOutline className="w-4 h-4" />
             )}
           </button>
         </div>
@@ -160,9 +160,9 @@ export default function PasswordPage() {
             className="absolute right-3 top-[38px]  cursor-pointer text-muted-foreground hover:text-foreground"
           >
             {showConfirmPassword ? (
-              <LockOpen className="w-4 h-4" />
+              <MdLockOpen className="w-4 h-4" />
             ) : (
-              <Lock className="w-4 h-4" />
+              <MdLockOutline className="w-4 h-4" />
             )}
           </button>
         </div>

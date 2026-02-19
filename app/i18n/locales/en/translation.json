@@ -170,7 +170,25 @@
     "type": "Type",
     "issued": "Issued",
     "language": "Language",
-    "noDocuments": "No documents found."
+    "noDocuments": "No documents found.",
+    "cataloguesPlaceholder": "Catalogues content will be integrated here."
+  },
+  "restriction": {
+    "firstLoginTitle1": "Level up your experience with",
+    "firstLoginTitle2": "Unlimited Features!",
+    "firstLoginBody": "You're currently in the FREE PLAN with limited features. Upgrade your plan to enjoy unlimited access to all our features.",
+    "documentsLimitTitle1": "You've reached your document limit",
+    "documentsLimitTitle2": "Upgrade to see more",
+    "documentsLimitBody": "Your plan allows access to {{count}} documents. Upgrade to view more documents and get unlimited access.",
+    "cataloguesLimitTitle1": "You've reached your catalogue limit",
+    "cataloguesLimitTitle2": "Upgrade to see more",
+    "cataloguesLimitBody": "Your plan allows access to {{count}} catalogues. Upgrade to view more catalogues and get unlimited access.",
+    "upgradeNow": "Upgrade now",
+    "currentPlanLine": "current plan",
+    "freePlan": "FREE PLAN",
+    "premiumFeatureLine": "premium feature",
+    "featureDocuments": "Documents",
+    "featureCatalogues": "Catalogues"
   },
   "librarySidebar": {
     "platform": "Platform",

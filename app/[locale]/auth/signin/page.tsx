@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { Phone, Lock, LockOpen } from "lucide-react";
+import { Phone } from "lucide-react";
+import { MdLockOutline, MdLockOpen } from "react-icons/md";
 import { SignupLayout } from "@/components/auth/signup-layout";
 import { PhoneInput } from "@/components/auth/phone-input";
 import { FormInput } from "@/components/auth/form-input";
@@ -222,9 +223,9 @@ export default function SignInPage() {
             className="absolute right-3 top-[38px] cursor-pointer text-muted-foreground hover:text-foreground"
           >
             {showPassword ? (
-              <LockOpen className="w-4 h-4" />
+              <MdLockOpen className="w-4 h-4" />
             ) : (
-              <Lock className="w-4 h-4" />
+              <MdLockOutline className="w-4 h-4" />
             )}
           </button>
         </div>
