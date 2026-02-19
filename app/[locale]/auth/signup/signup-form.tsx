@@ -155,7 +155,7 @@ export function SignupForm() {
           type="button"
           variant="secondary"
           onClick={handleEmailSignup}
-          className="w-full h-11"
+          className="w-full h-11 font-normal"
         >
           <Image
             src="/assets/mail.png"

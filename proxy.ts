@@ -66,11 +66,9 @@ export function proxy(request: NextRequest) {
       signIn.searchParams.set('from', pathname)
       return NextResponse.redirect(signIn)
     }
+    // Only block non-admins from admin routes; admins may access both admin and client
     if (isAdminPath && !isAdmin) {
       return NextResponse.redirect(new URL(`/${localeSegment}/client`, request.url))
-    }
-    if (isClientPath && isAdmin) {
-      return NextResponse.redirect(new URL(`/${localeSegment}/admin`, request.url))
     }
   }
 

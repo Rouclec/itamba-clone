@@ -32,7 +32,8 @@
   --primary-foreground: oklch(1 0 0);
 
   --hover: #ECF2FF;
-  
+  --hover-light: #F0F5FF;
+
   /* Secondary: Purple/Magenta (#9A33FD) - Links and accents */
   --secondary: oklch(0.56 0.28 300);
   --secondary-foreground: oklch(1 0 0);
@@ -60,6 +61,8 @@
   
   /* Surface (#EFF2F5) */
   --surface: #EFF2F5;
+  /* Muted fill (#F0F0F0) – subtle control/panel background (e.g. dialog close button) */
+  --muted-fill: #F0F0F0;
 
   /* Border & Input */
   --border: oklch(0.92 0 0);
@@ -150,7 +153,9 @@
   --color-body-text: var(--body-text);
   --color-inactive-text: var(--inactive-text);
   --color-surface: var(--surface);
+  --color-muted-fill: var(--muted-fill);
   --color-hover: var(--hover);
+  --color-hover-light: var(--hover-light);
   --color-accent-yellow: var(--accent-yellow);
   --color-tertiary: var(--tertiary);
   --color-border: var(--border);

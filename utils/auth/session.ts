@@ -52,6 +52,9 @@ export const USER_ID_STORAGE_KEY = "itamba-user-id";
 /** Cached current user profile; hydrated on load, refetched when user lands. Cleared on sign out. */
 export const CURRENT_USER_STORAGE_KEY = "itamba-current-user";
 
+/** Guest "first login" modal dismissed this session; cleared on sign out so modal shows again after next login. */
+export const GUEST_FIRST_LOGIN_MODAL_SEEN_KEY = "itamba_guest_first_login_modal_seen";
+
 const COOKIE_EXPIRY_DATE_MS = 10 * 24 * 60 * 60 * 1000;
 
 /**
@@ -107,6 +110,7 @@ export function clearSession() {
     localStorage.removeItem(SIGNUP_REQUEST_STORAGE_KEY);
     localStorage.removeItem(USER_ID_STORAGE_KEY);
     localStorage.removeItem(CURRENT_USER_STORAGE_KEY);
+    localStorage.removeItem(GUEST_FIRST_LOGIN_MODAL_SEEN_KEY);
   }
 }
 

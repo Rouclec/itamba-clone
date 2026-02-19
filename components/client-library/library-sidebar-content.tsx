@@ -23,6 +23,8 @@ import {
 import { useT } from '@/app/i18n/client'
 import { LocaleLink } from '@/components/locale-link'
 import { cn } from '@/lib/utils'
+import { useAuth } from '@/lib/auth-context'
+import { useRestrictions } from '@/hooks/use-restrictions'
 
 const SIDEBAR_WIDTH = '16rem'
 
@@ -30,6 +32,11 @@ type SectionKey = 'library' | 'myDashboard'
 
 export function LibrarySidebarContent() {
   const { t } = useT('translation')
+  const { currentUser, user } = useAuth()
+  const role = currentUser?.userRole ?? user?.role ?? undefined
+  const userId = currentUser?.userId ?? undefined
+  const { cataloguesLimit } = useRestrictions(role, userId)
+  const canAccessCatalogues = cataloguesLimit === -1
   const documentsActive = true // Documents is the current page
   const [openSections, setOpenSections] = useState<Record<SectionKey, boolean>>({
     library: true,
@@ -112,13 +119,26 @@ export function LibrarySidebarContent() {
               <MdOutlineTextSnippet className="size-4" />
               {t('librarySidebar.documents')}
             </Link>
-            <LocaleLink href="/client/categories" className={cn(navChildClass, navChildInactiveClass, 'justify-between')}>
-              <span className="flex items-center gap-2">
+            {canAccessCatalogues ? (
+              <LocaleLink
+                href="/client/categories"
+                className={cn(navChildClass, navChildInactiveClass)}
+              >
                 <MdOutlineCategory className="size-4" />
                 {t('librarySidebar.catalogues')}
-              </span>
-              <MdLockOutline className="size-3.5 text-muted-foreground" />
-            </LocaleLink>
+              </LocaleLink>
+            ) : (
+              <Link
+                href="#"
+                className={cn(navChildClass, navChildInactiveClass, 'justify-between')}
+              >
+                <span className="flex items-center gap-2">
+                  <MdOutlineCategory className="size-4" />
+                  {t('librarySidebar.catalogues')}
+                </span>
+                <MdLockOutline className="size-3.5 text-muted-foreground" />
+              </Link>
+            )}
             <Link href="#" className={cn(navChildClass, navChildInactiveClass, 'justify-between')}>
               <span className="flex items-center gap-2">
                 <MdOutlineWidgets className="size-4" />

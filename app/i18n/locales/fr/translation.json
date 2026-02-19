@@ -171,6 +171,7 @@
     "issued": "Publié",
     "language": "Langue",
     "noDocuments": "Aucun document trouvé.",
+    "errorFetchingDocumentDetails": "Erreur lors de la récupération des détails du document",
     "cataloguesPlaceholder": "Le contenu des catalogues sera intégré ici."
   },
   "restriction": {

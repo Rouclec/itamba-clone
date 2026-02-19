@@ -1,48 +1,72 @@
 /**
  * Role helpers for auth. Use with JWT user_role string or API role types.
+ * Handles both protobuf-style (ADMIN_ROLE_SUPER_ADMIN) and snake_case (super_admin) from backend.
  * Safe for Edge (no React, no browser APIs).
  */
 
 const ADMIN_ROLE_PREFIX = 'ADMIN_ROLE_'
 const USER_ROLE_PREFIX = 'USER_ROLE_'
 
-/** Admin role values from API (v2AdminRole) */
-const ADMIN_ROLES = new Set([
-  'ADMIN_ROLE_UNSPECIFIED',
-  'ADMIN_ROLE_SUPER_ADMIN',
-  'ADMIN_ROLE_LIBRARY_ADMINISTRATOR',
-  'ADMIN_ROLE_DOCUMENTS_MANAGER',
-  'ADMIN_ROLE_DOCUMENTS_EDITOR',
-  'ADMIN_ROLE_DOCUMENTS_WRITER',
-  'ADMIN_ROLE_CUSTOMERS_ADMINISTRATOR',
-  'ADMIN_ROLE_ACCOUNTS_MANAGER',
+/** Admin slugs (normalized): from protobuf ADMIN_ROLE_* or backend snake_case. */
+const ADMIN_SLUGS = new Set([
+  'unspecified',
+  'super_admin',
+  'library_administrator',
+  'documents_manager',
+  'documents_editor',
+  'documents_writer',
+  'customers_administrator',
+  'accounts_manager',
 ])
 
-/** User role values from API (v2UserRole) */
-const USER_ROLES = new Set([
-  'USER_ROLE_UNSPECIFIED',
-  'USER_ROLE_GUEST',
-  'USER_ROLE_STUDENT',
-  'USER_ROLE_PROFESSIONAL',
-  'USER_ROLE_ORGANIZATION',
+/** User slugs (normalized): from protobuf USER_ROLE_* or backend snake_case. */
+const USER_SLUGS = new Set([
+  'unspecified',
+  'guest',
+  'student',
+  'professional',
+  'organization',
 ])
 
 /**
- * Returns true if the role string is an admin role (v2AdminRole).
- * Accepts JWT user_role string or API role type.
+ * Normalize role from claim/API to a canonical slug (snake_case).
+ * - "ADMIN_ROLE_SUPER_ADMIN" → "super_admin"
+ * - "USER_ROLE_PROFESSIONAL" → "professional"
+ * - "super_admin" → "super_admin"
+ * - "professional" → "professional"
  */
-export function isAdminRole(role: string | undefined | null): boolean {
-  if (!role || typeof role !== 'string') return false
-  return role.startsWith(ADMIN_ROLE_PREFIX) || ADMIN_ROLES.has(role)
+export function getRoleSlug(role: string | undefined | null): string {
+  if (!role || typeof role !== 'string') return ''
+  const r = role.trim()
+  if (r.startsWith(ADMIN_ROLE_PREFIX)) return r.slice(ADMIN_ROLE_PREFIX.length).toLowerCase()
+  if (r.startsWith(USER_ROLE_PREFIX)) return r.slice(USER_ROLE_PREFIX.length).toLowerCase()
+  return r.toLowerCase()
 }
 
 /**
- * Returns true if the role string is a user/client role (v2UserRole).
- * Accepts JWT user_role string or API role type.
+ * Returns true if the role string is an admin role.
+ * Accepts both protobuf (ADMIN_ROLE_SUPER_ADMIN) and snake_case (super_admin).
+ * USER_ROLE_* is never admin (e.g. USER_ROLE_UNSPECIFIED → false).
+ */
+export function isAdminRole(role: string | undefined | null): boolean {
+  if (!role || typeof role !== 'string') return false
+  if (role.startsWith(USER_ROLE_PREFIX)) return false
+  if (role.startsWith(ADMIN_ROLE_PREFIX)) return true
+  const slug = getRoleSlug(role)
+  return slug !== '' && ADMIN_SLUGS.has(slug)
+}
+
+/**
+ * Returns true if the role string is a user/client role.
+ * Accepts both protobuf (USER_ROLE_PROFESSIONAL) and snake_case (professional).
+ * ADMIN_ROLE_* is never user.
  */
 export function isUserRole(role: string | undefined | null): boolean {
   if (!role || typeof role !== 'string') return false
-  return role.startsWith(USER_ROLE_PREFIX) || USER_ROLES.has(role)
+  if (role.startsWith(ADMIN_ROLE_PREFIX)) return false
+  if (role.startsWith(USER_ROLE_PREFIX)) return true
+  const slug = getRoleSlug(role)
+  return slug !== '' && USER_SLUGS.has(slug)
 }
 
 /** Default admin role for mapping simple "admin" app role */

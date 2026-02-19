@@ -159,7 +159,7 @@ export default function EmailSignupPage() {
           type="button"
           variant="secondary"
           onClick={() => router.push(path("/auth/signup"))}
-          className="w-full h-11"
+          className="w-full h-11 font-normal"
         >
           <Phone className="w-5 h-5 shrink-0" />
           {t("auth.continueWithPhone")}

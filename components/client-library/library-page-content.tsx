@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Search, LayoutGrid, List } from "lucide-react";
 import {
   MdOutlineTextSnippet,
@@ -49,11 +51,12 @@ import type {
 } from "@/@hey_api/documentsmaterials.swagger/types.gen";
 import { useAuth } from "@/lib/auth-context";
 import { useRestrictions } from "@/hooks/use-restrictions";
+import { useLocalePath, useLocale } from "@/lib/use-locale";
 import {
   RestrictionModal,
   getRestrictionCopy,
 } from "@/components/restriction-modal";
-import moment from "moment";
+import { formatDocumentDate } from "@/utils/date";
 
 const PAGE_SIZE = 9;
 
@@ -125,51 +128,58 @@ function DocumentCard({
   doc: DocumentDisplayItem;
   t: (k: string) => string;
 }) {
+  const path = useLocalePath();
+  const locale = useLocale();
+  const href = path(`/client/${doc.id}`);
   return (
-    <Card className="flex flex-col overflow-hidden rounded-lg border p-4 shadow-xs cursor-pointer hover:bg-hover">
-      <CardContent className="flex flex-1 flex-col p-0">
-        <div className="flex flex-row items-stretch overflow-hidden gap-2">
-          <div className="shrink-0">
-            <MdOutlineTextSnippet className="size-5 shrink-0 text-muted-foreground" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <span className="min-w-0 truncate text-base text-body-text font-bold">
-              {doc.reference} | {moment(doc.issued).format("MMM DD, YYYY")}
-            </span>
-            <p className="line-clamp-3 min-w-0 text-base font-light font-merriweather mt-1 text-body-text">
-              {doc.title}
-            </p>
-            <div className="mt-10 flex flex-1 items-center gap-4 text-xs font-normal text-inactive-text">
-              <span className="flex items-center gap-0.5">
-                <MdInsertDriveFile className="size-3.5" />
-                {doc.articles} {t("client.articles")}
+    <Link href={href} className="block">
+      <Card className="flex h-[184px] flex-col overflow-hidden rounded-lg border p-4 shadow-xs cursor-pointer hover:bg-hover">
+        <CardContent className="flex min-h-0 flex-1 flex-col p-0">
+          <div className="flex min-h-0 flex-1 flex-row items-stretch gap-2 overflow-hidden">
+            <div className="shrink-0">
+              <MdOutlineTextSnippet className="size-5 shrink-0 text-muted-foreground" />
+            </div>
+            <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+              <span className="min-w-0 shrink-0 truncate text-base font-bold text-body-text">
+                {doc.reference} | {formatDocumentDate(doc.issued, locale)}
               </span>
-              <span className="flex items-center gap-0.5">
-                <MdLanguage className="size-3.5" />{" "}
-                {doc.language.slice(0, 2).toUpperCase()}
-              </span>
-              <span className="rounded-full bg-surface px-2.5 py-0.5 text-body-text">
-                {doc.type.charAt(0).toUpperCase() + doc.type.slice(1)}
+              <p className="mt-1 line-clamp-3 min-w-0 shrink-0 text-base font-light font-merriweather text-body-text">
+                {doc.title}
+              </p>
+              <div className="min-h-0 flex-1" aria-hidden />
+              <div className="flex shrink-0 items-center gap-4 text-xs font-normal text-inactive-text">
+                <span className="flex items-center gap-0.5">
+                  <MdInsertDriveFile className="size-3.5" />
+                  {doc.articles} {t("client.articles")}
+                </span>
+                <span className="flex items-center gap-0.5">
+                  <MdLanguage className="size-3.5" />{" "}
+                  {doc.language.slice(0, 2).toUpperCase()}
+                </span>
+                <span className="rounded-full bg-surface px-2.5 py-0.5 text-body-text">
+                  {doc.type.charAt(0).toUpperCase() + doc.type.slice(1)}
+                </span>
+              </div>
+            </div>
+            <div className="flex flex-col justify-between items-end">
+              <button
+                type="button"
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                className="shrink-0  bg-hover p-1 rounded-sm text-primary hover:text-foreground"
+              >
+                <MdStarBorder className="size-4" />
+              </button>
+              <span
+                className="inline-flex h-6 items-center justify-center rounded-md gap-1.5 px-3 shrink-0 py-0 border border-border text-foreground hover:bg-hover text-sm font-medium cursor-pointer"
+                role="presentation"
+              >
+                {t("client.view")}
               </span>
             </div>
           </div>
-          <div className="flex flex-col justify-between items-end">
-            <button
-              type="button"
-              className="shrink-0  bg-hover p-1 rounded-sm text-primary hover:text-foreground"
-            >
-              <MdStarBorder className="size-4" />
-            </button>
-            <Button
-              size="sm"
-              className="shrink-0 bg-surface text-foreground hover:bg-hover"
-            >
-              {t("client.view")}
-            </Button>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </Link>
   );
 }
 
@@ -182,13 +192,25 @@ function DocumentTableRow({
   t: (k: string) => string;
   index: number;
 }) {
+  const router = useRouter();
+  const path = useLocalePath();
+  const locale = useLocale();
   const isOdd = index % 2 === 1;
   return (
     <TableRow
+      role="button"
+      tabIndex={0}
       className={cn(
-        "border-0",
+        "border-0 cursor-pointer",
         isOdd ? "bg-[#FAFAFA]" : "bg-white",
       )}
+      onClick={() => router.push(path(`/client/${doc.id}`))}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          router.push(path(`/client/${doc.id}`));
+        }
+      }}
     >
       <TableCell className="px-4 py-7">
         <div className="flex items-center gap-2">
@@ -203,7 +225,7 @@ function DocumentTableRow({
         </span>
       </TableCell>
       <TableCell className="px-4 py-7">{doc.articles}</TableCell>
-      <TableCell className="px-4 py-7">{moment(doc.issued).format("MMM DD, YYYY")}</TableCell>
+      <TableCell className="px-4 py-7">{formatDocumentDate(doc.issued, locale)}</TableCell>
       <TableCell className="uppercase text-right px-4 py-7">{doc.language}</TableCell>
     </TableRow>
   );
@@ -214,8 +236,8 @@ export function LibraryPageContent() {
   const [view, setView] = useState<"grid" | "list">("grid");
   const [showDocumentsRestriction, setShowDocumentsRestriction] =
     useState(false);
-  const { currentUser } = useAuth();
-  const role = currentUser?.userRole ?? undefined;
+  const { currentUser, user } = useAuth();
+  const role = currentUser?.userRole ?? user?.role ?? undefined;
   const userId = currentUser?.userId ?? undefined;
   const { documentsLimit } = useRestrictions(role, userId);
   const lang = i18n?.language ?? i18n?.resolvedLanguage ?? "en";
@@ -350,7 +372,8 @@ export function LibraryPageContent() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="flex h-full min-h-0 flex-col overflow-auto">
+      <div className="min-h-screen flex-1 space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl font-semibold text-primary">
@@ -535,7 +558,7 @@ export function LibraryPageContent() {
         </div>
       )}
 
-      <div className="flex justify-end">
+      <div className="flex justify-end [&_[data-slot=pagination-link]]:font-normal">
         <Pagination className="w-full justify-end">
           <PaginationContent>
             <PaginationItem>
@@ -598,6 +621,7 @@ export function LibraryPageContent() {
         ctaText={documentsRestrictionCopy.ctaText}
         imageOverlay={documentsRestrictionCopy.imageOverlay}
       />
+      </div>
     </div>
   );
 }

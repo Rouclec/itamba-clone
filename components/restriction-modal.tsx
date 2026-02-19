@@ -52,7 +52,7 @@ export function RestrictionModal({
   ctaText,
   onUpgrade,
   onClose,
-  imageSrc,
+  imageSrc = '/assets/restriction-bg.png',
   imageOverlay,
 }: RestrictionModalProps) {
   const handleOpenChange = (next: boolean) => {
@@ -64,7 +64,7 @@ export function RestrictionModal({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent
         showCloseButton={true}
-        className="flex w-[90vw] sm:max-w-[700px] flex-col p-0 gap-0 overflow-hidden rounded-lg border-border shadow-lg sm:flex-row sm:items-stretch"
+        className="flex w-[90vw] sm:max-w-[700px] flex-col p-0 gap-0 overflow-hidden rounded-lg border-0 shadow-lg sm:flex-row sm:items-stretch"
       >
         <div className="flex min-h-0 flex-1 flex-col sm:flex-row sm:items-stretch sm:min-w-0">
           {/* Left: full width on mobile, 300px on sm+; stretches to full height */}
@@ -73,7 +73,7 @@ export function RestrictionModal({
             style={{
               background: imageSrc
                 ? undefined
-                : 'linear-gradient(180deg, #6C2EE4 0%, #17188B 100%)',
+                : 'linear-gradient(to bottom, #00000000 0%, #00000000 28%, #9A33FD66 60%, #9A33FD66 67%, #4135BBC7 80%, #0D3695 100%)',
             }}
           >
             {imageSrc && (
@@ -82,7 +82,7 @@ export function RestrictionModal({
                   src={imageSrc}
                   alt=""
                   fill
-                  className="object-cover"
+                  className="object-cover object-top"
                   sizes="300px"
                 />
                 <div
@@ -96,38 +96,40 @@ export function RestrictionModal({
                 {/* Solid line on both sides of the text */}
                 <div className="flex items-center gap-3">
                   <div className="h-px flex-1 bg-accent-yellow" aria-hidden />
-                  <span className="text-xs font-medium uppercase tracking-wider text-accent-yellow shrink-0">
+                  <span className="text-xs font-bold uppercase tracking-wider text-accent-yellow shrink-0">
                     {imageOverlay.lineText}
                   </span>
                   <div className="h-px flex-1 bg-accent-yellow" aria-hidden />
                 </div>
-                <p className="text-sm font-semibold text-white sm:text-base uppercase">
+                <p className="text-sm font-bold text-white sm:text-base uppercase">
                   {imageOverlay.title}
                 </p>
               </div>
             )}
           </div>
 
-          {/* Right: content; min-w-0 so long text can wrap within modal */}
-          <div className="flex min-w-0 flex-1 flex-col overflow-auto bg-white p-6 text-left sm:p-8">
+          {/* Right: content; fill height so button can align with left overlay */}
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col bg-white p-4 text-left">
             <DialogTitle className="sr-only">
               {titleLine1} {titleLine2}
             </DialogTitle>
             <DialogDescription className="sr-only">{body}</DialogDescription>
 
-            <div className="flex min-h-0 flex-1 flex-col pt-2 text-left">
-              <div className="flex flex-col gap-4">
-                <div>
-                  <p className="text-[#1A1A1A] text-base font-bold leading-tight">
-                    {titleLine1}
-                  </p>
-                  <p className="text-tertiary text-xl font-bold leading-tight sm:text-2xl">
-                    {titleLine2}
-                  </p>
+            <div className="flex min-h-0 flex-1 flex-col pt-2 sm:pt-10 text-left">
+              <div className="min-h-0 flex-1 overflow-auto">
+                <div className="flex flex-col gap-4">
+                  <div>
+                    <p className="text-body-text text-xl font-bold leading-tight">
+                      {titleLine1}
+                    </p>
+                    <p className="text-tertiary text-xl font-bold leading-tight sm:text-2xl">
+                      {titleLine2}
+                    </p>
+                  </div>
+                  <p className="text-muted font-normal leading-relaxed">{body}</p>
                 </div>
-                <p className="text-[#667085] text-sm leading-relaxed">{body}</p>
               </div>
-              <div className="mt-auto pt-16">
+              <div className="shrink-0 pt-16">
                 <Button
                   onClick={() => {
                     onUpgrade?.()
@@ -174,7 +176,7 @@ export function getRestrictionCopy(
       return {
         titleLine1: t('restriction.documentsLimitTitle1'),
         titleLine2: t('restriction.documentsLimitTitle2'),
-        body: t('restriction.documentsLimitBody').replace('{count}', String(limit ?? 0)),
+        body: t('restriction.documentsLimitBody').replace('{{count}}', String(limit ?? 0)),
         ctaText: t('restriction.upgradeNow'),
         imageOverlay: {
           lineText: t('restriction.premiumFeatureLine'),

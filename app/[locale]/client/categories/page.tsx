@@ -21,8 +21,8 @@ export default function ClientCategoriesPage() {
   const router = useRouter()
   const path = useLocalePath()
   const { t } = useT('translation')
-  const { currentUser } = useAuth()
-  const role = currentUser?.userRole ?? undefined
+  const { currentUser, user } = useAuth()
+  const role = currentUser?.userRole ?? user?.role ?? undefined
   const userId = currentUser?.userId ?? undefined
   const { cataloguesLimit } = useRestrictions(role, userId)
   const hasAccess = cataloguesLimit === -1

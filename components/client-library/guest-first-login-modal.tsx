@@ -4,23 +4,20 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '@/lib/auth-context'
 import { useT } from '@/app/i18n/client'
 import { RestrictionModal, getRestrictionCopy } from '@/components/restriction-modal'
-
-const GUEST_FIRST_LOGIN_SEEN_KEY = 'itamba_guest_first_login_modal_seen'
+import { GUEST_FIRST_LOGIN_MODAL_SEEN_KEY } from '@/utils/auth/session'
+import { getRoleSlug } from '@/utils/auth/role'
 
 export function GuestFirstLoginModal() {
   const { user, currentUser, hydrated } = useAuth()
   const { t } = useT('translation')
   const [open, setOpen] = useState(false)
   const role = currentUser?.userRole ?? user?.role
-  const isGuest =
-    role &&
-    typeof role === 'string' &&
-    role.toLowerCase().replace(/-/g, '_') === 'user_role_guest'
+  const isGuest = getRoleSlug(role) === 'guest'
 
   useEffect(() => {
     if (!hydrated || !isGuest) return
     try {
-      const seen = localStorage.getItem(GUEST_FIRST_LOGIN_SEEN_KEY)
+      const seen = localStorage.getItem(GUEST_FIRST_LOGIN_MODAL_SEEN_KEY)
       if (seen === 'true') return
       setOpen(true)
     } catch {
@@ -32,7 +29,7 @@ export function GuestFirstLoginModal() {
     setOpen(next)
     if (!next) {
       try {
-        localStorage.setItem(GUEST_FIRST_LOGIN_SEEN_KEY, 'true')
+        localStorage.setItem(GUEST_FIRST_LOGIN_MODAL_SEEN_KEY, 'true')
       } catch {
         // ignore
       }
@@ -56,6 +53,7 @@ export function GuestFirstLoginModal() {
       onUpgrade={() => {
         // Could navigate to upgrade/pricing page
       }}
+      imageSrc="/assets/free-limited-bg.png"
     />
   )
 }

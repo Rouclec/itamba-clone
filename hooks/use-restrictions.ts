@@ -6,16 +6,7 @@ import {
   annotationServiceListsUsersBookmarksOptions,
   annotationServiceListsUsersNotesOptions,
 } from '@/@hey_api/annotation.swagger/@tanstack/react-query.gen'
-import { isAdminRole } from '@/utils/auth/role'
-
-/** Role keys used for limit lookups (normalized from API v2UserRole). */
-const ROLE_TO_LIMIT_KEY: Record<string, string> = {
-  user_role_guest: 'guest',
-  user_role_student: 'student',
-  user_role_professional: 'professional',
-  user_role_organization: 'organization',
-  user_role_unspecified: 'guest',
-}
+import { isAdminRole, getRoleSlug } from '@/utils/auth/role'
 
 const LIMIT_MAPPINGS: Record<
   string,
@@ -57,8 +48,9 @@ export function useRestrictions(
   documentsLimit: number
   isGuest: boolean
 } {
-  const normalizedRole = (role ?? 'guest').toLowerCase().replace(/-/g, '_')
-  const limitKey = ROLE_TO_LIMIT_KEY[normalizedRole] ?? 'guest'
+  const slug = getRoleSlug(role) || 'guest'
+  const limitKey =
+    slug === 'unspecified' ? 'guest' : (LIMIT_MAPPINGS[slug] ? slug : 'guest')
   const isAdmin = isAdminRole(role)
   const limits = LIMIT_MAPPINGS[limitKey] ?? LIMIT_MAPPINGS.guest
   const isGuest = limitKey === 'guest'

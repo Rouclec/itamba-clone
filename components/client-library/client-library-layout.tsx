@@ -57,7 +57,7 @@ export function ClientLibraryLayout({
           <aside
             className={cn(
               'hidden shrink-0 overflow-y-hidden overflow-x-hidden border-r border-border bg-white transition-[width] duration-200 ease-in-out md:flex md:flex-col min-h-0',
-              sidebarOpen ? 'w-[var(--library-sidebar-width)]' : 'w-0'
+              sidebarOpen ? 'w-(--library-sidebar-width)' : 'w-0'
             )}
           >
             {sidebarOpen && <LibrarySidebarContent />}
@@ -67,7 +67,7 @@ export function ClientLibraryLayout({
           <Sheet open={isMobile ? sidebarOpen : false} onOpenChange={setSidebarOpen}>
             <SheetContent
               side="left"
-              className="w-[var(--library-sidebar-width)] border-r border-border bg-white p-0 [&>button]:hidden overflow-y-hidden overflow-x-hidden flex flex-col min-h-0 max-h-full h-full"
+              className="w-(--library-sidebar-width) border-r border-border bg-white p-0 [&>button]:hidden overflow-y-hidden overflow-x-hidden flex flex-col min-h-0 max-h-full h-full"
             >
               <LibrarySidebarContent />
             </SheetContent>
@@ -76,8 +76,8 @@ export function ClientLibraryLayout({
           {/* Main: header + scrollable body; footer in normal flow at bottom with fixed height */}
           <main className="flex min-w-0 flex-1 flex-col min-h-0">
             {header}
-            <div className="flex-1 min-h-0 overflow-auto bg-[#F9F9F9]">
-              <div className="min-h-[100vh] p-4 md:p-6">{children}</div>
+            <div className="flex flex-1 min-h-0 flex-col overflow-auto bg-[#F9F9F9]">
+              <div className="min-h-0 flex-1 p-4">{children}</div>
               <LibraryFooter />
             </div>
           </main>

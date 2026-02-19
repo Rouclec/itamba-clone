@@ -2,7 +2,7 @@
 
 import { useRouter, usePathname } from 'next/navigation'
 import { Check, Settings, LogOut, ChevronRight, UserPen } from 'lucide-react'
-import { MdLanguage, MdKeyboardArrowDown } from 'react-icons/md'
+import { MdLanguage, MdKeyboardArrowDown, MdVerified } from 'react-icons/md'
 import { useAuth } from '@/lib/auth-context'
 import { useT } from '@/app/i18n/client'
 import { LocaleLink } from '@/components/locale-link'
@@ -63,9 +63,9 @@ export function LibraryHeader() {
             <div className="hidden text-left min-w-0 md:block">
               <div className="flex items-center gap-1 text-sm font-medium truncate">
                 {currentUser?.fullName ?? currentUser?.email ?? currentUser?.telephone ?? '—'}
-                <Check className="size-4 shrink-0 text-primary" />
+                <MdVerified className="size-4 shrink-0 text-tertiary" />
               </div>
-              <div className="text-xs text-muted-foreground">{t('client.freePlan')}</div>
+              <div className="text-xs text-tertiary font-medium">{t('client.freePlan')}</div>
             </div>
             <MdKeyboardArrowDown className="size-4 shrink-0 text-muted-foreground" />
           </button>

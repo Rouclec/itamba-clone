@@ -171,12 +171,13 @@
     "issued": "Issued",
     "language": "Language",
     "noDocuments": "No documents found.",
+    "errorFetchingDocumentDetails": "Error fetching document details",
     "cataloguesPlaceholder": "Catalogues content will be integrated here."
   },
   "restriction": {
     "firstLoginTitle1": "Level up your experience with",
     "firstLoginTitle2": "Unlimited Features!",
-    "firstLoginBody": "You're currently in the FREE PLAN with limited features. Upgrade your plan to enjoy unlimited access to all our features.",
+    "firstLoginBody": "You're currently on the FREE PLAN with limited features. Upgrade your plan to enjoy unlimited access to all our features.",
     "documentsLimitTitle1": "You've reached your document limit",
     "documentsLimitTitle2": "Upgrade to see more",
     "documentsLimitBody": "Your plan allows access to {{count}} documents. Upgrade to view more documents and get unlimited access.",

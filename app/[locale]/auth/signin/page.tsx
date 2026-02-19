@@ -264,7 +264,7 @@ export default function SignInPage() {
             type="button"
             variant="secondary"
             onClick={switchToEmail}
-            className="w-full h-11"
+            className="w-full h-11 font-normal"
           >
             <Image
               src="/assets/mail.png"
@@ -280,7 +280,7 @@ export default function SignInPage() {
             type="button"
             variant="secondary"
             onClick={switchToPhone}
-            className="w-full h-11"
+            className="w-full h-11 font-normal"
           >
             <Phone className="w-5 h-5 shrink-0" />
             {t('auth.continueWithPhone')}

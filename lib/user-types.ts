@@ -25,15 +25,34 @@ export interface V1User {
   updated_at?: string;
 }
 
+/** Admin slugs from backend (snake_case). Map to v2 ADMIN_ROLE_* for app use. */
+const ADMIN_SLUG_TO_V2: Record<string, string> = {
+  unspecified: "ADMIN_ROLE_UNSPECIFIED",
+  super_admin: "ADMIN_ROLE_SUPER_ADMIN",
+  library_administrator: "ADMIN_ROLE_LIBRARY_ADMINISTRATOR",
+  documents_manager: "ADMIN_ROLE_DOCUMENTS_MANAGER",
+  documents_editor: "ADMIN_ROLE_DOCUMENTS_EDITOR",
+  documents_writer: "ADMIN_ROLE_DOCUMENTS_WRITER",
+  customers_administrator: "ADMIN_ROLE_CUSTOMERS_ADMINISTRATOR",
+  accounts_manager: "ADMIN_ROLE_ACCOUNTS_MANAGER",
+};
+
 /** Map v1 user_role to v2 USER_ROLE_* */
 function toV2UserRole(role?: string): v2User["userRole"] {
   if (!role) return undefined;
-  const r = role.toLowerCase();
+  const r = role.toLowerCase().trim();
   if (r === "guest") return "USER_ROLE_GUEST";
   if (r === "student") return "USER_ROLE_STUDENT";
   if (r === "professional") return "USER_ROLE_PROFESSIONAL";
   if (r === "organization") return "USER_ROLE_ORGANIZATION";
   return "USER_ROLE_UNSPECIFIED";
+}
+
+/** Map v1 user_role (admin slug) to v2 ADMIN_ROLE_* when backend returns snake_case. */
+function toV2AdminRole(role?: string): string | undefined {
+  if (!role) return undefined;
+  const slug = role.toLowerCase().trim();
+  return ADMIN_SLUG_TO_V2[slug];
 }
 
 /** Map v1 user_account_status to v2 if possible */
@@ -68,7 +87,8 @@ export function v1UserToV2(v1: V1User | null): v2User | null {
     passwordRequestStatus: claims?.password_request_status
       ? (claims.password_request_status as v2User["passwordRequestStatus"])
       : undefined,
-    userRole: toV2UserRole(claims?.user_role),
+    userRole: (toV2AdminRole(claims?.user_role) ??
+      toV2UserRole(claims?.user_role)) as v2User["userRole"],
     createdAt: v1.created_at ?? undefined,
     updatedAt: v1.updated_at ?? undefined,
   };
