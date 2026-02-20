@@ -67,7 +67,7 @@ export function ClientLibraryLayout({
           <Sheet open={isMobile ? sidebarOpen : false} onOpenChange={setSidebarOpen}>
             <SheetContent
               side="left"
-              className="w-(--library-sidebar-width) border-r border-border bg-white p-0 [&>button]:hidden overflow-y-hidden overflow-x-hidden flex flex-col min-h-0 max-h-full h-full"
+              className="w-(--library-sidebar-width) border-r border-border bg-white p-0 [&>button]:hidden overflow-hidden flex flex-col min-h-0 max-h-full h-full"
             >
               <LibrarySidebarContent />
             </SheetContent>

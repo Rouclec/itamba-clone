@@ -8,6 +8,8 @@ import { useT } from '@/app/i18n/client'
 import { ClientLibraryLayout } from '@/components/client-library/client-library-layout'
 import { LibraryHeader } from '@/components/client-library/library-header'
 import { GuestFirstLoginModal } from '@/components/client-library/guest-first-login-modal'
+import { BookmarksProvider } from '@/contexts/bookmarks-context'
+import { NotesProvider } from '@/contexts/notes-context'
 
 export default function ClientLayout({
   children,
@@ -39,11 +41,13 @@ export default function ClientLayout({
   }
 
   return (
-    <>
-      <GuestFirstLoginModal />
-      <ClientLibraryLayout header={<LibraryHeader />}>
-        {children}
-      </ClientLibraryLayout>
-    </>
+    <BookmarksProvider>
+      <NotesProvider>
+        <GuestFirstLoginModal />
+        <ClientLibraryLayout header={<LibraryHeader />}>
+          {children}
+        </ClientLibraryLayout>
+      </NotesProvider>
+    </BookmarksProvider>
   )
 }

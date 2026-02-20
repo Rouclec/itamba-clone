@@ -1,10 +1,18 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { useState, useMemo, useRef, useCallback } from "react";
+import { useState, useMemo, useRef, useCallback, useEffect } from "react";
 import Link from "next/link";
-import { ChevronDown, ChevronRight, ArrowLeft, List } from "lucide-react";
+import { ChevronDown, ChevronRight, ArrowLeft, List, Loader2 } from "lucide-react";
 import { useGetDocumentDetails } from "@/hooks/use-documents";
+import { useAuth } from "@/lib/auth-context";
+import { useBookmarks, useBookmarksQuery } from "@/contexts/bookmarks-context";
+import { useNotesQuery } from "@/contexts/notes-context";
+import { useRestrictions } from "@/hooks/use-restrictions";
+import {
+  RestrictionModal,
+  getRestrictionCopy,
+} from "@/components/restriction-modal";
 import type {
   DocumentDetails,
   DocumentDetailsMaterial,
@@ -24,10 +32,12 @@ import {
 } from "@/components/ui/sheet";
 import { HiOutlineMenuAlt4 } from "react-icons/hi";
 import {
+  MdBookmark,
   MdBookmarkBorder,
   MdCloseFullscreen,
   MdOutlineTextSnippet,
 } from "react-icons/md";
+import { ArticleDetailModal } from "@/components/client-library/article-detail-modal";
 
 const ARTICLE_ID_PREFIX = "article-";
 
@@ -42,12 +52,19 @@ function sortByPosition(
   });
 }
 
-/** Flatten materials in document order (by position): ref + json_body/body + isDivision. */
+/** Flatten materials in document order (by position): id, ref, json_body/body, isDivision. */
 function flattenMaterials(
   materials: DocumentDetailsMaterial[] | undefined,
-): { ref: string; json_body?: string; body?: string; isDivision: boolean }[] {
+): {
+  id?: string;
+  ref: string;
+  json_body?: string;
+  body?: string;
+  isDivision: boolean;
+}[] {
   if (!materials?.length) return [];
   const out: {
+    id?: string;
     ref: string;
     json_body?: string;
     body?: string;
@@ -58,6 +75,7 @@ function flattenMaterials(
     for (const m of sorted) {
       const body = m.body ?? m.raw_text ?? "";
       out.push({
+        id: m.id,
         ref: m.ref,
         json_body: m.json_body,
         body: body || undefined,
@@ -247,7 +265,26 @@ function getDocTypeLabelForLocale(
   return isFr ? (titles.fr ?? titles.en ?? "") : (titles.en ?? titles.fr ?? "");
 }
 
-function DocumentContent({ doc }: { doc: DocumentDetails }) {
+function DocumentContent({
+  doc,
+  bookmarkedMaterialIds,
+  bookmarkPendingMaterialId,
+  onBookmarkClick,
+  onExpandClick,
+}: {
+  doc: DocumentDetails;
+  bookmarkedMaterialIds: Set<string>;
+  /** Material id for which add/remove bookmark is in progress (show loader). */
+  bookmarkPendingMaterialId: string | null;
+  onBookmarkClick?: (materialId: string, materialRef: string) => void;
+  /** When expand (fullscreen) is clicked for an article. */
+  onExpandClick?: (item: {
+    id?: string;
+    ref: string;
+    json_body?: string;
+    body?: string;
+  }) => void;
+}) {
   const locale = useLocale();
   const flat = useMemo(() => flattenMaterials(doc.children), [doc.children]);
   const docTypeLabel = getDocTypeLabelForLocale(
@@ -299,10 +336,58 @@ function DocumentContent({ doc }: { doc: DocumentDetails }) {
               </p>
               {!item.isDivision && (
                 <div className="flex items-center gap-4">
-                  <div className="cursor-pointer size-8 rounded-md items-center justify-center flex bg-hover hover:bg-hover-light">
-                    <MdBookmarkBorder className="size-4 text-body-text" />
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    aria-busy={item.id ? bookmarkPendingMaterialId === item.id : undefined}
+                    className={cn(
+                      "size-8 rounded-md items-center justify-center flex bg-hover hover:bg-hover-light",
+                      item.id && bookmarkPendingMaterialId === item.id
+                        ? "cursor-wait pointer-events-none"
+                        : "cursor-pointer",
+                    )}
+                    onClick={() =>
+                      item.id && onBookmarkClick?.(item.id, item.ref)
+                    }
+                    onKeyDown={(e) => {
+                      if ((e.key === "Enter" || e.key === " ") && item.id && onBookmarkClick) {
+                        e.preventDefault();
+                        onBookmarkClick(item.id, item.ref);
+                      }
+                    }}
+                  >
+                    {item.id && bookmarkPendingMaterialId === item.id ? (
+                      <Loader2 className="size-4 shrink-0 animate-spin text-body-text" />
+                    ) : item.id && bookmarkedMaterialIds.has(item.id) ? (
+                      <MdBookmark className="size-4 text-body-text" />
+                    ) : (
+                      <MdBookmarkBorder className="size-4 text-body-text" />
+                    )}
                   </div>
-                  <div className="cursor-pointer size-8 rounded-md items-center justify-center flex bg-hover hover:bg-hover-light">
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    className="cursor-pointer size-8 rounded-md items-center justify-center flex bg-hover hover:bg-hover-light"
+                    onClick={() =>
+                      onExpandClick?.({
+                        id: item.id,
+                        ref: item.ref,
+                        json_body: item.json_body,
+                        body: item.body,
+                      })
+                    }
+                    onKeyDown={(e) => {
+                      if ((e.key === "Enter" || e.key === " ") && onExpandClick) {
+                        e.preventDefault();
+                        onExpandClick({
+                          id: item.id,
+                          ref: item.ref,
+                          json_body: item.json_body,
+                          body: item.body,
+                        });
+                      }
+                    }}
+                  >
                     <MdCloseFullscreen className="size-4 text-body-text" />
                   </div>
                 </div>
@@ -357,6 +442,47 @@ export default function DocumentDetailsPage() {
   const [contentsOpen, setContentsOpen] = useState(false);
   const articleRef = useRef<HTMLElement>(null);
   const scrollToArticle = useScrollToArticle(articleRef);
+  const { user, currentUser, userId } = useAuth();
+  const role = currentUser?.userRole ?? user?.role;
+  const { bookmarksExceeded, bookmarksLimit } = useRestrictions(
+    role,
+    userId ?? undefined,
+  );
+  const [showBookmarkRestriction, setShowBookmarkRestriction] = useState(false);
+  const [expandedArticle, setExpandedArticle] = useState<{
+    id?: string;
+    ref: string;
+    json_body?: string;
+    body?: string;
+  } | null>(null);
+  useBookmarksQuery();
+  useNotesQuery();
+  const {
+    displayBookmarkedIds,
+    bookmarkPendingMaterialId,
+    toggleBookmark,
+  } = useBookmarks();
+
+  const bookmarkRestrictionCopy = useMemo(
+    () =>
+      getRestrictionCopy(
+        "bookmarks-limit",
+        t,
+        bookmarksLimit < 0 ? undefined : bookmarksLimit,
+      ),
+    [t, bookmarksLimit],
+  );
+  const handleBookmarkClick = useCallback(
+    (materialId: string, materialRef: string) => {
+      toggleBookmark({
+        materialId,
+        materialRef,
+        bookmarksExceeded,
+        onLimitReached: () => setShowBookmarkRestriction(true),
+      });
+    },
+    [toggleBookmark, bookmarksExceeded],
+  );
   const topLevelCount = doc?.children?.length ?? 0;
   const openIndices = useMemo(() => {
     const closed = closedTocIndices;
@@ -436,8 +562,8 @@ export default function DocumentDetailsPage() {
 
       {/* Two-column row: pull left only so TOC is flush, no horizontal overflow */}
       <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-x-hidden md:-ml-4 md:flex-row">
-        {/* Desktop: left TOC, flush left, scrolls only when content overflows */}
-        <aside className="hidden md:flex md:w-64 md:shrink-0 md:flex-col md:gap-2 md:overflow-y-auto md:min-h-0 md:py-0">
+        {/* Desktop/tablet: left TOC; narrower on md (768px) so article gets more space, full width from lg */}
+        <aside className="hidden md:flex md:w-48 md:shrink-0 md:flex-col md:gap-2 md:overflow-y-auto md:min-h-0 md:py-0 lg:w-64">
           <DocumentToc
             doc={doc}
             openIndices={openIndices}
@@ -475,11 +601,40 @@ export default function DocumentDetailsPage() {
         </div>
         <article
           ref={articleRef}
-          className="min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto md:pl-5"
+          className="min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto md:pl-4 lg:pl-5"
         >
-          <DocumentContent doc={doc} />
+          <DocumentContent
+            doc={doc}
+            bookmarkedMaterialIds={displayBookmarkedIds}
+            bookmarkPendingMaterialId={bookmarkPendingMaterialId}
+            onBookmarkClick={handleBookmarkClick}
+            onExpandClick={setExpandedArticle}
+          />
         </article>
       </div>
+
+      <ArticleDetailModal
+        open={!!expandedArticle}
+        onOpenChange={(open) => !open && setExpandedArticle(null)}
+        article={expandedArticle}
+        document={
+          doc
+            ? { id: doc.id, ref: doc.ref ?? doc.document_number ?? "", title: doc.title ?? "" }
+            : null
+        }
+      />
+
+      <RestrictionModal
+        open={showBookmarkRestriction}
+        onOpenChange={setShowBookmarkRestriction}
+        variant="bookmarks-limit"
+        limit={bookmarksLimit < 0 ? undefined : bookmarksLimit}
+        titleLine1={bookmarkRestrictionCopy.titleLine1}
+        titleLine2={bookmarkRestrictionCopy.titleLine2}
+        body={bookmarkRestrictionCopy.body}
+        ctaText={bookmarkRestrictionCopy.ctaText}
+        imageOverlay={bookmarkRestrictionCopy.imageOverlay}
+      />
     </div>
   );
 }

@@ -4,6 +4,8 @@
  */
 
 export interface DocumentDetailsMaterial {
+  /** Material id; used to match bookmarks (bookmark.materialId). */
+  id?: string;
   ref: string;
   position?: number;
   /** ProseMirror/TipTap JSON (stringified). Preferred over body when present. */

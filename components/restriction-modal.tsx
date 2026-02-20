@@ -9,7 +9,7 @@ import {
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 
-export type RestrictionVariant = 'first-login' | 'documents-limit' | 'catalogues-limit'
+export type RestrictionVariant = 'first-login' | 'documents-limit' | 'catalogues-limit' | 'bookmarks-limit' | 'notes-limit'
 
 /** Bottom overlay on the left image: line (yellow/orange) and title (white). */
 export interface RestrictionImageOverlay {
@@ -192,6 +192,28 @@ export function getRestrictionCopy(
         imageOverlay: {
           lineText: t('restriction.premiumFeatureLine'),
           title: t('restriction.featureCatalogues'),
+        },
+      }
+    case 'bookmarks-limit':
+      return {
+        titleLine1: t('restriction.bookmarksLimitTitle1'),
+        titleLine2: t('restriction.bookmarksLimitTitle2'),
+        body: t('restriction.bookmarksLimitBody').replace('{{count}}', String(limit ?? 0)),
+        ctaText: t('restriction.upgradeNow'),
+        imageOverlay: {
+          lineText: t('restriction.premiumFeatureLine'),
+          title: t('restriction.featureBookmarks'),
+        },
+      }
+    case 'notes-limit':
+      return {
+        titleLine1: t('restriction.notesLimitTitle1'),
+        titleLine2: t('restriction.notesLimitTitle2'),
+        body: t('restriction.notesLimitBody').replace('{{count}}', String(limit ?? 0)),
+        ctaText: t('restriction.upgradeNow'),
+        imageOverlay: {
+          lineText: t('restriction.premiumFeatureLine'),
+          title: t('restriction.featureNotes'),
         },
       }
     default:

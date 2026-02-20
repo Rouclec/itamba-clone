@@ -60,7 +60,7 @@ export function LibrarySidebarContent() {
   const childGroupClass = 'border-l border-border ml-3 pl-3 flex flex-col gap-0.5'
 
   return (
-    <div className="flex h-full min-h-0 w-(--library-sidebar-width) flex-col overflow-y-hidden overflow-x-hidden bg-white">
+    <div className="flex h-full min-h-0 w-(--library-sidebar-width) flex-col overflow-y-auto overflow-x-hidden bg-white">
       {/* Logo + name — height matches header so the border line is straight */}
       <div className="flex h-20 shrink-0 items-center border-b border-border p-4">
         <LocaleLink href="/client" className="flex items-start gap-2">

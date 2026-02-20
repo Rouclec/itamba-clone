@@ -44,6 +44,8 @@ export function useRestrictions(
 ): {
   notesExceeded: boolean
   bookmarksExceeded: boolean
+  bookmarksLimit: number
+  notesLimit: number
   cataloguesLimit: number
   documentsLimit: number
   isGuest: boolean
@@ -55,10 +57,11 @@ export function useRestrictions(
   const limits = LIMIT_MAPPINGS[limitKey] ?? LIMIT_MAPPINGS.guest
   const isGuest = limitKey === 'guest'
 
+  // Use same query key as bookmarks context so we share cache and get fresh data when list is invalidated on add/remove
   const { data: bookmarksData } = useQuery({
     ...annotationServiceListsUsersBookmarksOptions({
       path: { userId: userId ?? '' },
-      query: { page: '1', pageSize: '1' },
+      query: { page: '1' },
     }),
     enabled: !!userId && !isAdmin,
   })
@@ -66,7 +69,7 @@ export function useRestrictions(
   const { data: notesData } = useQuery({
     ...annotationServiceListsUsersNotesOptions({
       path: { userId: userId ?? '' },
-      query: { page: '1', pageSize: '1' },
+      query: { page: '1' },
     }),
     enabled: !!userId && !isAdmin,
   })
@@ -74,27 +77,31 @@ export function useRestrictions(
   const notesExceeded = useMemo(() => {
     if (!userId) return false
     if (limits.notes < 0) return false
-    const total = notesData?.statistics?.totalItems
+    const fromApi = notesData?.statistics?.totalItems
       ? parseInt(notesData.statistics.totalItems, 10)
-      : undefined
-    if (typeof total !== 'number') return false
+      : 0
+    const fromList = notesData?.notes?.length ?? 0
+    const total = Number.isNaN(fromApi) ? fromList : Math.max(fromApi, fromList)
     return total >= limits.notes
-  }, [limits.notes, notesData?.statistics?.totalItems, userId])
+  }, [limits.notes, notesData?.statistics?.totalItems, notesData?.notes?.length, userId])
 
   const bookmarksExceeded = useMemo(() => {
     if (!userId) return false
     if (limits.bookmarks < 0) return false
-    const total = bookmarksData?.statistics?.totalItems
+    const fromApi = bookmarksData?.statistics?.totalItems
       ? parseInt(bookmarksData.statistics.totalItems, 10)
-      : undefined
-    if (typeof total !== 'number') return false
+      : 0
+    const fromList = bookmarksData?.bookmarks?.length ?? 0
+    const total = Number.isNaN(fromApi) ? fromList : Math.max(fromApi, fromList)
     return total >= limits.bookmarks
-  }, [bookmarksData?.statistics?.totalItems, limits.bookmarks, userId])
+  }, [bookmarksData?.statistics?.totalItems, bookmarksData?.bookmarks?.length, limits.bookmarks, userId])
 
   if (isAdmin) {
     return {
       notesExceeded: false,
       bookmarksExceeded: false,
+      bookmarksLimit: -1,
+      notesLimit: -1,
       cataloguesLimit: -1,
       documentsLimit: -1,
       isGuest: false,
@@ -104,6 +111,8 @@ export function useRestrictions(
   return {
     notesExceeded,
     bookmarksExceeded,
+    bookmarksLimit: limits.bookmarks,
+    notesLimit: limits.notes,
     cataloguesLimit: limits.catalogues,
     documentsLimit: limits.documents,
     isGuest,

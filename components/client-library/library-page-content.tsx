@@ -50,6 +50,7 @@ import type {
   v2DocumentType,
 } from "@/@hey_api/documentsmaterials.swagger/types.gen";
 import { useAuth } from "@/lib/auth-context";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { useRestrictions } from "@/hooks/use-restrictions";
 import { useLocalePath, useLocale } from "@/lib/use-locale";
 import {
@@ -73,17 +74,34 @@ const DECADES = [
 
 /**
  * Pagination slots: numbers and ellipsis.
- * - Near start (e.g. 11 pages): 1, 2, 3, 4, …, 9, 10, 11
- * - In middle (e.g. page 20 of 50): 1, …, 19, 20, 21, …, 50
- * - Near end: 1, 2, 3, …, last-2, last-1, last
+ * @param maxVisible - Max page number slots to show (e.g. 4 on mobile). Omit for default (7).
+ * - Near start: 1, 2, 3, 4, …, last (or with maxVisible 4: 1, 2, …, last)
+ * - In middle: 1, …, page-1, page, page+1, …, last (or 1, …, page, …, last when maxVisible 4)
+ * - Near end: 1, …, last-2, last-1, last
  */
 function getPaginationSlots(
   page: number,
   totalPages: number,
+  maxVisible?: number,
 ): (number | "ellipsis")[] {
-  if (totalPages <= 7) {
+  const limit = maxVisible ?? 7;
+
+  if (totalPages <= limit) {
     return Array.from({ length: totalPages }, (_, i) => i + 1);
   }
+
+  if (limit <= 4) {
+    // Mobile: at most 4 page numbers, more ellipsis
+    if (page <= 2) {
+      return [1, 2, "ellipsis", totalPages];
+    }
+    if (page >= totalPages - 1) {
+      return [1, "ellipsis", totalPages - 1, totalPages];
+    }
+    return [1, "ellipsis", page, "ellipsis", totalPages];
+  }
+
+  // Desktop: show more slots
   if (page <= 4) {
     return [1, 2, 3, 4, "ellipsis", totalPages - 2, totalPages - 1, totalPages];
   }
@@ -132,8 +150,8 @@ function DocumentCard({
   const locale = useLocale();
   const href = path(`/client/${doc.id}`);
   return (
-    <Link href={href} className="block">
-      <Card className="flex h-[184px] flex-col overflow-hidden rounded-lg border p-4 shadow-xs cursor-pointer hover:bg-hover">
+    <Link href={href} className="block min-w-0">
+      <Card className="flex h-[184px] min-w-0 flex-col overflow-hidden rounded-lg border p-4 shadow-xs cursor-pointer hover:bg-hover">
         <CardContent className="flex min-h-0 flex-1 flex-col p-0">
           <div className="flex min-h-0 flex-1 flex-row items-stretch gap-2 overflow-hidden">
             <div className="shrink-0">
@@ -240,6 +258,7 @@ export function LibraryPageContent() {
   const role = currentUser?.userRole ?? user?.role ?? undefined;
   const userId = currentUser?.userId ?? undefined;
   const { documentsLimit } = useRestrictions(role, userId);
+  const isMobile = useIsMobile();
   const lang = i18n?.language ?? i18n?.resolvedLanguage ?? "en";
   const sortByTitle = lang.startsWith("fr")
     ? "SORT_BY_TITLE_FR"
@@ -372,8 +391,8 @@ export function LibraryPageContent() {
   };
 
   return (
-    <div className="flex h-full min-h-0 flex-col overflow-auto">
-      <div className="min-h-screen flex-1 space-y-6">
+    <div className="flex h-full min-h-0 min-w-0 flex-col overflow-x-hidden overflow-y-auto">
+      <div className="min-h-0 min-w-0 flex-1 space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl font-semibold text-primary">
@@ -405,8 +424,8 @@ export function LibraryPageContent() {
         </button>
       </div>
 
-      <div className="flex flex-col gap-4 sm:justify-between bg-surface p-4 rounded-lg">
-        <div className="relative flex-1 bg-white rounded-lg">
+      <div className="flex min-w-0 flex-col gap-4 sm:justify-between bg-surface p-4 rounded-lg">
+        <div className="relative min-w-0 flex-1 bg-white rounded-lg">
           <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             placeholder={t("client.searchPlaceholder")}
@@ -415,7 +434,7 @@ export function LibraryPageContent() {
             className="pl-9 border-border placeholder:text-inactive-text"
           />
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex min-w-0 flex-wrap items-center gap-4">
           <Select
             value={selectedCatalogueId}
             onValueChange={(value) => {
@@ -501,7 +520,7 @@ export function LibraryPageContent() {
           {t("common.loading")}
         </p>
       ) : view === "grid" ? (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {documents.length === 0 ? (
             <p className="col-span-full text-muted-foreground py-8 text-center">
               {t("client.noDocuments")}
@@ -513,7 +532,7 @@ export function LibraryPageContent() {
           )}
         </div>
       ) : (
-        <div className="rounded-lg overflow-hidden">
+        <div className="min-w-0 overflow-x-auto rounded-lg">
           <Table className="border-0">
             <TableHeader className="[&_tr]:border-0">
               <TableRow className="border-0 bg-surface">
@@ -572,7 +591,7 @@ export function LibraryPageContent() {
                 className={cn(page <= 1 && "pointer-events-none opacity-50")}
               />
             </PaginationItem>
-            {getPaginationSlots(page, totalPages).map((slot, index) =>
+            {getPaginationSlots(page, totalPages, isMobile ? 4 : 7).map((slot, index) =>
               slot === "ellipsis" ? (
                 <PaginationItem key={`ellipsis-${index}`}>
                   <span className="px-2">…</span>
