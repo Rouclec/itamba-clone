@@ -1,6 +1,6 @@
 "use client";
 
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { useState, useMemo, useRef, useCallback, useEffect } from "react";
 import Link from "next/link";
 import { ChevronDown, ChevronRight, ArrowLeft, List, Loader2 } from "lucide-react";
@@ -109,6 +109,28 @@ function buildTocWithFlatIndices(
         : undefined;
       return { material: m, flatIndex, children };
     });
+  }
+  return walk(materials);
+}
+
+/** Find the flat index of a material by id (same order as DocumentContent). */
+function findFlatIndexByMaterialId(
+  materials: DocumentDetailsMaterial[] | undefined,
+  materialId: string,
+): number | null {
+  if (!materials?.length) return null;
+  let index = 0;
+  function walk(items: DocumentDetailsMaterial[]): number | null {
+    const sorted = sortByPosition(items);
+    for (const m of sorted) {
+      if (m.id === materialId) return index;
+      index++;
+      if (m.children?.length) {
+        const found = walk(sortByPosition(m.children));
+        if (found !== null) return found;
+      }
+    }
+    return null;
   }
   return walk(materials);
 }
@@ -425,9 +447,19 @@ function DocumentContent({
   );
 }
 
-export default function DocumentDetailsPage() {
+export interface DocumentDetailViewProps {
+  documentId: string | undefined;
+  /** When set, breadcrumb back link uses this (e.g. from catalogue document page). */
+  backLink?: { href: string; label: string };
+}
+
+export function DocumentDetailView({
+  documentId: documentIdProp,
+  backLink,
+}: DocumentDetailViewProps) {
   const params = useParams();
-  const documentId = params?.documentId as string | undefined;
+  const searchParams = useSearchParams();
+  const documentId = documentIdProp ?? (params?.documentId as string | undefined);
   const path = useLocalePath();
   const { t } = useT("translation");
   const {
@@ -502,6 +534,30 @@ export default function DocumentDetailsPage() {
     });
   };
 
+  const materialIdFromUrl = searchParams.get("materialId");
+  const noteIdFromUrl = searchParams.get("noteId");
+  const scrollToArticleFn = scrollToArticle;
+  useEffect(() => {
+    if (!doc?.children || !materialIdFromUrl) return;
+    const flat = flattenMaterials(doc.children);
+    const flatIndex = findFlatIndexByMaterialId(doc.children, materialIdFromUrl);
+    if (flatIndex !== null) {
+      const timer = setTimeout(() => scrollToArticleFn(flatIndex), 300);
+      if (noteIdFromUrl) {
+        const item = flat[flatIndex];
+        if (item) {
+          setExpandedArticle({
+            id: item.id,
+            ref: item.ref,
+            json_body: item.json_body,
+            body: item.body,
+          });
+        }
+      }
+      return () => clearTimeout(timer);
+    }
+  }, [doc?.children, materialIdFromUrl, noteIdFromUrl, scrollToArticleFn]);
+
   if (!documentId) {
     return (
       <div className="py-8 text-center text-muted-foreground">
@@ -537,26 +593,38 @@ export default function DocumentDetailsPage() {
     doc.document_type?.titles,
     locale,
   );
+  const backHref = backLink?.href ?? path("/client");
+  const backLabel = backLink?.label ?? (doc.ref || doc.document_number || doc.title);
+  const docRefLine = doc.ref || doc.document_number || doc.title;
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-6 overflow-hidden">
-      {/* Breadcrumb: back + ref, then date | type */}
+      {/* Breadcrumb: back + ref, then date | type (when backLink, show parent then doc ref indented) */}
       <div className="flex shrink-0 gap-4">
-        <Link href={path("/client")}>
+        <Link href={backHref}>
           <div className="bg-muted-fill size-8 items-center justify-center flex rounded-lg hover:bg-hover">
-            <ArrowLeft className="size-4 shrink-0 texg-body-text" />
+            <ArrowLeft className="size-4 shrink-0 text-body-text" />
           </div>
         </Link>
-        <div>
-          <Link href={path("/client")}>
+        <div className="min-w-0">
+          <Link href={backHref}>
             <span className="text-primary font-semibold text-xl leading-tight">
-              {doc.ref || doc.document_number || doc.title}
+              {backLabel}
             </span>
           </Link>
-          <p className="text-body-text text-base font-normal leading-tight">
-            {formatDocumentDate(doc.issue_date, locale)}
-            {docTypeLabel && ` | ${docTypeLabel}`}
-          </p>
+          {backLink && (
+            <p className="text-body-text text-base font-normal leading-tight mt-0.5 pl-0">
+              <span className="font-medium">{docRefLine}</span>
+              {` | ${formatDocumentDate(doc.issue_date, locale)}`}
+              {docTypeLabel && ` | ${docTypeLabel}`}
+            </p>
+          )}
+          {!backLink && (
+            <p className="text-body-text text-base font-normal leading-tight">
+              {formatDocumentDate(doc.issue_date, locale)}
+              {docTypeLabel && ` | ${docTypeLabel}`}
+            </p>
+          )}
         </div>
       </div>
 
@@ -637,4 +705,10 @@ export default function DocumentDetailsPage() {
       />
     </div>
   );
+}
+
+export default function DocumentDetailsPage() {
+  const params = useParams();
+  const documentId = params?.documentId as string | undefined;
+  return <DocumentDetailView documentId={documentId} />;
 }

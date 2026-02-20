@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Search, LayoutGrid, List } from "lucide-react";
 import {
   MdOutlineTextSnippet,
@@ -122,7 +122,7 @@ export interface DocumentDisplayItem {
   language: string;
 }
 
-function mapDocumentToDisplay(doc: v2PublishedDocument): DocumentDisplayItem {
+export function mapDocumentToDisplay(doc: v2PublishedDocument): DocumentDisplayItem {
   const typeLabel =
     doc.documentType?.titles?.en ??
     doc.documentType?.titles?.fr ??
@@ -139,16 +139,19 @@ function mapDocumentToDisplay(doc: v2PublishedDocument): DocumentDisplayItem {
   };
 }
 
-function DocumentCard({
+export function DocumentCard({
   doc,
   t,
+  documentHref,
 }: {
   doc: DocumentDisplayItem;
   t: (k: string) => string;
+  /** When set, used as the card link (e.g. for catalogue-scoped document list). */
+  documentHref?: string;
 }) {
   const path = useLocalePath();
   const locale = useLocale();
-  const href = path(`/client/${doc.id}`);
+  const href = documentHref ?? path(`/client/${doc.id}`);
   return (
     <Link href={href} className="block min-w-0">
       <Card className="flex h-[184px] min-w-0 flex-col overflow-hidden rounded-lg border p-4 shadow-xs cursor-pointer hover:bg-hover">
@@ -180,13 +183,14 @@ function DocumentCard({
               </div>
             </div>
             <div className="flex flex-col justify-between items-end">
-              <button
+              {/* <button
                 type="button"
                 onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
                 className="shrink-0  bg-hover p-1 rounded-sm text-primary hover:text-foreground"
               >
                 <MdStarBorder className="size-4" />
-              </button>
+              </button> */}
+              <div />
               <span
                 className="inline-flex h-6 items-center justify-center rounded-md gap-1.5 px-3 shrink-0 py-0 border border-border text-foreground hover:bg-hover text-sm font-medium cursor-pointer"
                 role="presentation"
@@ -201,18 +205,22 @@ function DocumentCard({
   );
 }
 
-function DocumentTableRow({
+export function DocumentTableRow({
   doc,
   t,
   index,
+  documentHref,
 }: {
   doc: DocumentDisplayItem;
   t: (k: string) => string;
   index: number;
+  /** When set, used as the row link (e.g. for catalogue-scoped document list). */
+  documentHref?: string;
 }) {
   const router = useRouter();
   const path = useLocalePath();
   const locale = useLocale();
+  const href = documentHref ?? path(`/client/${doc.id}`);
   const isOdd = index % 2 === 1;
   return (
     <TableRow
@@ -222,11 +230,11 @@ function DocumentTableRow({
         "border-0 cursor-pointer",
         isOdd ? "bg-[#FAFAFA]" : "bg-white",
       )}
-      onClick={() => router.push(path(`/client/${doc.id}`))}
+      onClick={() => router.push(href)}
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
-          router.push(path(`/client/${doc.id}`));
+          router.push(href);
         }
       }}
     >
@@ -251,6 +259,7 @@ function DocumentTableRow({
 
 export function LibraryPageContent() {
   const { t, i18n } = useT("translation");
+  const searchParams = useSearchParams();
   const [view, setView] = useState<"grid" | "list">("grid");
   const [showDocumentsRestriction, setShowDocumentsRestriction] =
     useState(false);
@@ -267,6 +276,14 @@ export function LibraryPageContent() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [selectedCatalogueId, setSelectedCatalogueId] = useState<string>("all");
+
+  const catalogueIdFromUrl = searchParams.get("catalogueId");
+  useEffect(() => {
+    if (catalogueIdFromUrl) {
+      setSelectedCatalogueId(catalogueIdFromUrl);
+      setPage(1);
+    }
+  }, [catalogueIdFromUrl]);
   const [selectedDocumentTypeId, setSelectedDocumentTypeId] =
     useState<string>("all");
   const [selectedDecade, setSelectedDecade] = useState<{
@@ -443,10 +460,10 @@ export function LibraryPageContent() {
             }}
           >
             <SelectTrigger className="min-w-0 flex-1">
-              <SelectValue placeholder={t("client.allCategories")} />
+              <SelectValue placeholder={t("client.allCatalogues")} />
             </SelectTrigger>
             <SelectContent whiteBackground>
-              <SelectItem value="all">{t("client.allCategories")}</SelectItem>
+              <SelectItem value="all">{t("client.allCatalogues")}</SelectItem>
               {categories.map((cat) => (
                 <SelectItem
                   key={cat.categoryId}

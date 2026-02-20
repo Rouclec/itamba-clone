@@ -75,6 +75,9 @@ export type SubscriptionsSaveKycDocumentsBody = {
     documentUrl?: string;
     documentType?: string;
     schoolName?: string;
+    userName?: string;
+    userEmail?: string;
+    userPhone?: string;
     startDate?: string;
     endDate?: string;
     location?: string;
@@ -155,6 +158,9 @@ export type v2KycDocument = {
   documentUrl?: string;
   documentType?: string;
   schoolName?: string;
+  userName?: string;
+  userEmail?: string;
+  userPhone?: string;
   startDate?: string;
   endDate?: string;
   location?: string;

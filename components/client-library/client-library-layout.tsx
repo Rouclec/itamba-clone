@@ -73,12 +73,16 @@ export function ClientLibraryLayout({
             </SheetContent>
           </Sheet>
 
-          {/* Main: header + scrollable body; footer in normal flow at bottom with fixed height */}
+          {/* Main: header + scrollable body; footer stuck at bottom */}
           <main className="flex min-w-0 flex-1 flex-col min-h-0">
             {header}
-            <div className="flex flex-1 min-h-0 flex-col overflow-auto bg-[#F9F9F9]">
-              <div className="min-h-0 flex-1 p-4">{children}</div>
-              <LibraryFooter />
+            <div className="flex flex-1 min-h-0 min-w-0 flex-col bg-[#F9F9F9]">
+              <div className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden p-4">
+                {children}
+              </div>
+              <div className="shrink-0">
+                <LibraryFooter />
+              </div>
             </div>
           </main>
         </div>

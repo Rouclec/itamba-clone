@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import Image from 'next/image'
 import {
   MdOutlineLocalLibrary,
@@ -36,8 +37,16 @@ export function LibrarySidebarContent() {
   const role = currentUser?.userRole ?? user?.role ?? undefined
   const userId = currentUser?.userId ?? undefined
   const { cataloguesLimit } = useRestrictions(role, userId)
-  const canAccessCatalogues = cataloguesLimit === -1
-  const documentsActive = true // Documents is the current page
+  const canAccessCatalogues = cataloguesLimit === -1 || cataloguesLimit > 0
+  const pathname = usePathname() ?? ''
+  const cataloguesActive = pathname.includes('/client/catalogues')
+  const bookmarksActive = pathname.includes('/client/bookmarks')
+  const notesActive = pathname.includes('/client/notes')
+  const documentsActive =
+    pathname.includes('/client') &&
+    !pathname.includes('/client/catalogues') &&
+    !pathname.includes('/client/bookmarks') &&
+    !pathname.includes('/client/notes')
   const [openSections, setOpenSections] = useState<Record<SectionKey, boolean>>({
     library: true,
     myDashboard: true,
@@ -94,7 +103,7 @@ export function LibrarySidebarContent() {
             onClick={() => toggleSection('library')}
             className={cn(
               navParentClass,
-              documentsActive ? navParentActiveClass : navParentInactiveClass
+              (documentsActive || cataloguesActive) ? navParentActiveClass : navParentInactiveClass
             )}
             aria-expanded={openSections.library}
           >
@@ -109,8 +118,8 @@ export function LibrarySidebarContent() {
           </button>
           {openSections.library && (
           <div className={childGroupClass}>
-            <Link
-              href="#"
+            <LocaleLink
+              href="/client"
               className={cn(
                 navChildClass,
                 documentsActive ? navChildActiveClass : navChildInactiveClass
@@ -118,11 +127,14 @@ export function LibrarySidebarContent() {
             >
               <MdOutlineTextSnippet className="size-4" />
               {t('librarySidebar.documents')}
-            </Link>
+            </LocaleLink>
             {canAccessCatalogues ? (
               <LocaleLink
-                href="/client/categories"
-                className={cn(navChildClass, navChildInactiveClass)}
+                href="/client/catalogues"
+                className={cn(
+                  navChildClass,
+                  cataloguesActive ? navChildActiveClass : navChildInactiveClass
+                )}
               >
                 <MdOutlineCategory className="size-4" />
                 {t('librarySidebar.catalogues')}
@@ -139,7 +151,7 @@ export function LibrarySidebarContent() {
                 <MdLockOutline className="size-3.5 text-muted-foreground" />
               </Link>
             )}
-            <Link href="#" className={cn(navChildClass, navChildInactiveClass, 'justify-between')}>
+            {/* <Link href="#" className={cn(navChildClass, navChildInactiveClass, 'justify-between')}>
               <span className="flex items-center gap-2">
                 <MdOutlineWidgets className="size-4" />
                 {t('librarySidebar.types')}
@@ -152,7 +164,7 @@ export function LibrarySidebarContent() {
                 {t('librarySidebar.collections')}
               </span>
               <MdLockOutline className="size-3.5 text-muted-foreground" />
-            </Link>
+            </Link> */}
           </div>
           )}
         </div>
@@ -164,7 +176,7 @@ export function LibrarySidebarContent() {
           {t('librarySidebar.myWorkspace')}
         </p>
         <div className="flex flex-col gap-0.5">
-          <button
+          {/* <button
             type="button"
             onClick={() => toggleSection('myDashboard')}
             className={cn(navParentClass, navParentInactiveClass)}
@@ -193,22 +205,28 @@ export function LibrarySidebarContent() {
               <MdLockOutline className="size-3.5 text-muted-foreground" />
             </Link>
           </div>
-          )}
-          <Link href="#" className={navSiblingClass}>
+          )} */}
+          <LocaleLink
+            href="/client/notes"
+            className={cn(navSiblingClass, notesActive && navChildActiveClass)}
+          >
             <MdNotes className="size-4" />
             {t('librarySidebar.notes')}
-          </Link>
-          <Link href="#" className={navSiblingClass}>
+          </LocaleLink>
+          <LocaleLink
+            href="/client/bookmarks"
+            className={cn(navSiblingClass, bookmarksActive && navChildActiveClass)}
+          >
             <MdBookmarkBorder className="size-4" />
             {t('librarySidebar.bookmarkedArticles')}
-          </Link>
-          <Link href="#" className={cn(navSiblingClass, 'justify-between')}>
+          </LocaleLink>
+          {/* <Link href="#" className={cn(navSiblingClass, 'justify-between')}>
             <span className="flex items-center gap-2">
               <MdOutlineFolder className="size-4" />
               {t('librarySidebar.folders')}
             </span>
             <MdLockOutline className="size-3.5 text-muted-foreground" />
-          </Link>
+          </Link> */}
         </div>
       </div>
 

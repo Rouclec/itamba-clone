@@ -33,6 +33,15 @@ import type {
   UserServiceRefreshAccessTokenData,
   UserServiceRefreshAccessTokenError,
   UserServiceRefreshAccessTokenResponse,
+  UserServiceResetPasswordData,
+  UserServiceResetPasswordError,
+  UserServiceResetPasswordResponse,
+  UserServiceSendResetPasswordEmailVerificationLinkData,
+  UserServiceSendResetPasswordEmailVerificationLinkError,
+  UserServiceSendResetPasswordEmailVerificationLinkResponse,
+  UserServiceSendResetPasswordOtpData,
+  UserServiceSendResetPasswordOtpError,
+  UserServiceSendResetPasswordOtpResponse,
   UserServiceSendSignupEmailVerificationLinkData,
   UserServiceSendSignupEmailVerificationLinkError,
   UserServiceSendSignupEmailVerificationLinkResponse,
@@ -75,8 +84,9 @@ export const userServiceGetOtpByRequestId = <
 };
 
 /**
- * CancelAdminInvitation cancels a pending admin invitation and invalidates all verification links.
- * The invitation cannot be reactivated - a new invitation must be sent if needed.
+ * CancelAdminInvitation cancels a pending admin invitation and invalidates
+ * all verification links. The invitation cannot be reactivated - a new
+ * invitation must be sent if needed.
  */
 export const userServiceCancelAdminInvitation = <
   ThrowOnError extends boolean = false,
@@ -97,8 +107,9 @@ export const userServiceCancelAdminInvitation = <
 };
 
 /**
- * InviteAdmin sends an invitation email to create a new admin user with a specific role.
- * Invitation link expires after 6 minutes. Requires admin privileges.
+ * InviteAdmin sends an invitation email to create a new admin user with a
+ * specific role. Invitation link expires after 6 minutes. Requires admin
+ * privileges.
  */
 export const userServiceInviteAdmin = <ThrowOnError extends boolean = false>(
   options: OptionsLegacyParser<UserServiceInviteAdminData, ThrowOnError>,
@@ -136,7 +147,8 @@ export const userServiceResendAdminInvitation = <
 };
 
 /**
- * GenerateNewFiresbaseCustomToken creates a custom Firebase token for server-side authentication flows.
+ * GenerateNewFiresbaseCustomToken creates a custom Firebase token for
+ * server-side authentication flows.
  */
 export const userServiceGenerateNewFiresbaseCustomToken = <
   ThrowOnError extends boolean = false,
@@ -157,8 +169,9 @@ export const userServiceGenerateNewFiresbaseCustomToken = <
 };
 
 /**
- * CompleteProfile adds or updates additional profile information (name, location, contact details).
- * Cannot be used to change existing email or phone number.
+ * CompleteProfile adds or updates additional profile information (name,
+ * location, contact details). Cannot be used to change existing email or
+ * phone number.
  */
 export const userServiceCompleteProfile = <
   ThrowOnError extends boolean = false,
@@ -176,8 +189,9 @@ export const userServiceCompleteProfile = <
 };
 
 /**
- * ActivateAdminUsersAccount activates an admin account after email verification.
- * Completes user profile with name and password, then changes status to activated.
+ * ActivateAdminUsersAccount activates an admin account after email
+ * verification. Completes user profile with name and password, then changes
+ * status to activated.
  */
 export const userServiceActivateAdminUsersAccount = <
   ThrowOnError extends boolean = false,
@@ -198,7 +212,8 @@ export const userServiceActivateAdminUsersAccount = <
 };
 
 /**
- * Authenticate verifies user credentials (email/password or phone/password) and returns access/refresh tokens.
+ * Authenticate verifies user credentials (email/password or phone/password)
+ * and returns access/refresh tokens.
  */
 export const userServiceAuthenticate = <ThrowOnError extends boolean = false>(
   options: OptionsLegacyParser<UserServiceAuthenticateData, ThrowOnError>,
@@ -231,9 +246,59 @@ export const userServiceRefreshAccessToken = <
   });
 };
 
+export const userServiceResetPassword = <ThrowOnError extends boolean = false>(
+  options: OptionsLegacyParser<UserServiceResetPasswordData, ThrowOnError>,
+) => {
+  return (options?.client ?? client).post<
+    UserServiceResetPasswordResponse,
+    UserServiceResetPasswordError,
+    ThrowOnError
+  >({
+    ...options,
+    url: "/v2/api/public/users/reset-password",
+  });
+};
+
+export const userServiceSendResetPasswordEmailVerificationLink = <
+  ThrowOnError extends boolean = false,
+>(
+  options: OptionsLegacyParser<
+    UserServiceSendResetPasswordEmailVerificationLinkData,
+    ThrowOnError
+  >,
+) => {
+  return (options?.client ?? client).post<
+    UserServiceSendResetPasswordEmailVerificationLinkResponse,
+    UserServiceSendResetPasswordEmailVerificationLinkError,
+    ThrowOnError
+  >({
+    ...options,
+    url: "/v2/api/public/users/send-reset-password-email-verification-link",
+  });
+};
+
+export const userServiceSendResetPasswordOtp = <
+  ThrowOnError extends boolean = false,
+>(
+  options: OptionsLegacyParser<
+    UserServiceSendResetPasswordOtpData,
+    ThrowOnError
+  >,
+) => {
+  return (options?.client ?? client).post<
+    UserServiceSendResetPasswordOtpResponse,
+    UserServiceSendResetPasswordOtpError,
+    ThrowOnError
+  >({
+    ...options,
+    url: "/v2/api/public/users/send-reset-password-otp",
+  });
+};
+
 /**
- * SendSignupEmailVerificationLink sends an email verification link to confirm email ownership.
- * Link expires after 6 minutes and is rate limited to 20 requests per day.
+ * SendSignupEmailVerificationLink sends an email verification link to confirm
+ * email ownership. Link expires after 6 minutes and is rate limited to 20
+ * requests per day.
  */
 export const userServiceSendSignupEmailVerificationLink = <
   ThrowOnError extends boolean = false,
@@ -254,8 +319,8 @@ export const userServiceSendSignupEmailVerificationLink = <
 };
 
 /**
- * SendSignupOtp sends a one-time password via SMS to verify phone number during signup.
- * Rate limited to 20 requests per day per phone number.
+ * SendSignupOtp sends a one-time password via SMS to verify phone number
+ * during signup. Rate limited to 20 requests per day per phone number.
  */
 export const userServiceSendSignupOtp = <ThrowOnError extends boolean = false>(
   options: OptionsLegacyParser<UserServiceSendSignupOtpData, ThrowOnError>,
@@ -271,8 +336,9 @@ export const userServiceSendSignupOtp = <ThrowOnError extends boolean = false>(
 };
 
 /**
- * Signup creates a new user account after verifying authentication factors (email or SMS OTP).
- * Returns access and refresh tokens upon successful account creation.
+ * Signup creates a new user account after verifying authentication factors
+ * (email or SMS OTP). Returns access and refresh tokens upon successful
+ * account creation.
  */
 export const userServiceSignup = <ThrowOnError extends boolean = false>(
   options: OptionsLegacyParser<UserServiceSignupData, ThrowOnError>,
@@ -288,7 +354,8 @@ export const userServiceSignup = <ThrowOnError extends boolean = false>(
 };
 
 /**
- * VerifyOtp validates a one-time password sent via SMS to confirm phone number ownership.
+ * VerifyOtp validates a one-time password sent via SMS to confirm phone
+ * number ownership.
  */
 export const userServiceVerifyOtp = <ThrowOnError extends boolean = false>(
   options: OptionsLegacyParser<UserServiceVerifyOtpData, ThrowOnError>,
@@ -304,7 +371,8 @@ export const userServiceVerifyOtp = <ThrowOnError extends boolean = false>(
 };
 
 /**
- * VerifyEmail validates an email verification token and marks the email as verified.
+ * VerifyEmail validates an email verification token and marks the email as
+ * verified.
  */
 export const userServiceVerifyEmail = <ThrowOnError extends boolean = false>(
   options: OptionsLegacyParser<UserServiceVerifyEmailData, ThrowOnError>,

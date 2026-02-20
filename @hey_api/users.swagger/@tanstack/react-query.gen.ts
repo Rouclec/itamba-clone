@@ -28,6 +28,15 @@ import type {
   UserServiceRefreshAccessTokenData,
   UserServiceRefreshAccessTokenError,
   UserServiceRefreshAccessTokenResponse,
+  UserServiceResetPasswordData,
+  UserServiceResetPasswordError,
+  UserServiceResetPasswordResponse,
+  UserServiceSendResetPasswordEmailVerificationLinkData,
+  UserServiceSendResetPasswordEmailVerificationLinkError,
+  UserServiceSendResetPasswordEmailVerificationLinkResponse,
+  UserServiceSendResetPasswordOtpData,
+  UserServiceSendResetPasswordOtpError,
+  UserServiceSendResetPasswordOtpResponse,
   UserServiceSendSignupEmailVerificationLinkData,
   UserServiceSendSignupEmailVerificationLinkError,
   UserServiceSendSignupEmailVerificationLinkResponse,
@@ -56,6 +65,9 @@ import {
   userServiceActivateAdminUsersAccount,
   userServiceAuthenticate,
   userServiceRefreshAccessToken,
+  userServiceResetPassword,
+  userServiceSendResetPasswordEmailVerificationLink,
+  userServiceSendResetPasswordOtp,
   userServiceSendSignupEmailVerificationLink,
   userServiceSendSignupOtp,
   userServiceSignup,
@@ -400,6 +412,134 @@ export const userServiceRefreshAccessTokenMutation = (
   > = {
     mutationFn: async (localOptions) => {
       const { data } = await userServiceRefreshAccessToken({
+        ...options,
+        ...localOptions,
+        throwOnError: true,
+      });
+      return data;
+    },
+  };
+  return mutationOptions;
+};
+
+export const userServiceResetPasswordQueryKey = (
+  options: OptionsLegacyParser<UserServiceResetPasswordData>,
+) => [createQueryKey("userServiceResetPassword", options)];
+
+export const userServiceResetPasswordOptions = (
+  options: OptionsLegacyParser<UserServiceResetPasswordData>,
+) => {
+  return queryOptions({
+    queryFn: async ({ queryKey, signal }) => {
+      const { data } = await userServiceResetPassword({
+        ...options,
+        ...queryKey[0],
+        signal,
+        throwOnError: true,
+      });
+      return data;
+    },
+    queryKey: userServiceResetPasswordQueryKey(options),
+  });
+};
+
+export const userServiceResetPasswordMutation = (
+  options?: Partial<OptionsLegacyParser<UserServiceResetPasswordData>>,
+) => {
+  const mutationOptions: UseMutationOptions<
+    UserServiceResetPasswordResponse,
+    AxiosError<UserServiceResetPasswordError>,
+    OptionsLegacyParser<UserServiceResetPasswordData>
+  > = {
+    mutationFn: async (localOptions) => {
+      const { data } = await userServiceResetPassword({
+        ...options,
+        ...localOptions,
+        throwOnError: true,
+      });
+      return data;
+    },
+  };
+  return mutationOptions;
+};
+
+export const userServiceSendResetPasswordEmailVerificationLinkQueryKey = (
+  options: OptionsLegacyParser<UserServiceSendResetPasswordEmailVerificationLinkData>,
+) => [
+  createQueryKey("userServiceSendResetPasswordEmailVerificationLink", options),
+];
+
+export const userServiceSendResetPasswordEmailVerificationLinkOptions = (
+  options: OptionsLegacyParser<UserServiceSendResetPasswordEmailVerificationLinkData>,
+) => {
+  return queryOptions({
+    queryFn: async ({ queryKey, signal }) => {
+      const { data } = await userServiceSendResetPasswordEmailVerificationLink({
+        ...options,
+        ...queryKey[0],
+        signal,
+        throwOnError: true,
+      });
+      return data;
+    },
+    queryKey:
+      userServiceSendResetPasswordEmailVerificationLinkQueryKey(options),
+  });
+};
+
+export const userServiceSendResetPasswordEmailVerificationLinkMutation = (
+  options?: Partial<
+    OptionsLegacyParser<UserServiceSendResetPasswordEmailVerificationLinkData>
+  >,
+) => {
+  const mutationOptions: UseMutationOptions<
+    UserServiceSendResetPasswordEmailVerificationLinkResponse,
+    AxiosError<UserServiceSendResetPasswordEmailVerificationLinkError>,
+    OptionsLegacyParser<UserServiceSendResetPasswordEmailVerificationLinkData>
+  > = {
+    mutationFn: async (localOptions) => {
+      const { data } = await userServiceSendResetPasswordEmailVerificationLink({
+        ...options,
+        ...localOptions,
+        throwOnError: true,
+      });
+      return data;
+    },
+  };
+  return mutationOptions;
+};
+
+export const userServiceSendResetPasswordOtpQueryKey = (
+  options: OptionsLegacyParser<UserServiceSendResetPasswordOtpData>,
+) => [createQueryKey("userServiceSendResetPasswordOtp", options)];
+
+export const userServiceSendResetPasswordOtpOptions = (
+  options: OptionsLegacyParser<UserServiceSendResetPasswordOtpData>,
+) => {
+  return queryOptions({
+    queryFn: async ({ queryKey, signal }) => {
+      const { data } = await userServiceSendResetPasswordOtp({
+        ...options,
+        ...queryKey[0],
+        signal,
+        throwOnError: true,
+      });
+      return data;
+    },
+    queryKey: userServiceSendResetPasswordOtpQueryKey(options),
+  });
+};
+
+export const userServiceSendResetPasswordOtpMutation = (
+  options?: Partial<OptionsLegacyParser<UserServiceSendResetPasswordOtpData>>,
+) => {
+  const mutationOptions: UseMutationOptions<
+    UserServiceSendResetPasswordOtpResponse,
+    AxiosError<UserServiceSendResetPasswordOtpError>,
+    OptionsLegacyParser<UserServiceSendResetPasswordOtpData>
+  > = {
+    mutationFn: async (localOptions) => {
+      const { data } = await userServiceSendResetPasswordOtp({
         ...options,
         ...localOptions,
         throwOnError: true,

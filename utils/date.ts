@@ -26,3 +26,18 @@ export function formatDocumentDate(
   if (locale) m.locale(locale.startsWith("fr") ? "fr" : "en");
   return m.format("MMM DD, YYYY");
 }
+
+/**
+ * Format a bookmark/list date-time for display (e.g. "Jan 2, 2026 12:00 PM").
+ */
+export function formatBookmarkDateTime(
+  dateStr: string | null | undefined,
+  locale?: string,
+): string {
+  const normalized = normalizeDateString(dateStr);
+  if (!normalized) return "";
+  const m = moment(normalized);
+  if (!m.isValid()) return "";
+  if (locale) m.locale(locale.startsWith("fr") ? "fr" : "en");
+  return m.format("MMM D, YYYY h:mmA");
+}

@@ -41,6 +41,9 @@ export type UserServiceGenerateNewFiresbaseCustomTokenBody = unknown;
 export type UserServiceInviteAdminBody = {
   email?: string;
   role?: v2AdminRole;
+  /**
+   * name of the admin user who initiated the invitation
+   */
   createdBy?: string;
 };
 
@@ -112,7 +115,8 @@ export type v2AuthFactor = {
 };
 
 /**
- * CancelAdminInvitationResponse confirms the invitation was cancelled successfully.
+ * CancelAdminInvitationResponse confirms the invitation was cancelled
+ * successfully.
  */
 export type v2CancelAdminInvitationResponse = {
   message?: string;
@@ -167,10 +171,36 @@ export type v2RefreshAccessTokenResponse = {
 };
 
 /**
- * ResendAdminInvitationResponse confirms the invitation was resent successfully.
+ * ResendAdminInvitationResponse confirms the invitation was resent
+ * successfully.
  */
 export type v2ResendAdminInvitationResponse = {
   message?: string;
+};
+
+export type v2ResetPasswordRequest = {
+  authFactor?: v2AuthFactor;
+  phoneNumber?: string;
+  email?: string;
+  newPassword?: string;
+};
+
+export type v2ResetPasswordResponse = unknown;
+
+export type v2SendResetPasswordEmailVerificationLinkRequest = {
+  email?: string;
+};
+
+export type v2SendResetPasswordEmailVerificationLinkResponse = {
+  message?: string;
+};
+
+export type v2SendResetPasswordOtpRequest = {
+  phoneNumber?: string;
+};
+
+export type v2SendResetPasswordOtpResponse = {
+  requestId?: string;
 };
 
 export type v2SendSignupEmailVerificationLinkRequest = {
@@ -308,7 +338,9 @@ export type UserServiceInviteAdminData = {
   body: UserServiceInviteAdminBody;
   path: {
     /**
-     * ID of the admin user making this invitation request (for authorization)
+     * documents_manager)
+     *
+     * ID of the admin user making this invitation request
      */
     userId: string;
   };
@@ -387,6 +419,32 @@ export type UserServiceRefreshAccessTokenResponse =
   v2RefreshAccessTokenResponse;
 
 export type UserServiceRefreshAccessTokenError = rpcStatus;
+
+export type UserServiceResetPasswordData = {
+  body: v2ResetPasswordRequest;
+};
+
+export type UserServiceResetPasswordResponse = v2ResetPasswordResponse;
+
+export type UserServiceResetPasswordError = rpcStatus;
+
+export type UserServiceSendResetPasswordEmailVerificationLinkData = {
+  body: v2SendResetPasswordEmailVerificationLinkRequest;
+};
+
+export type UserServiceSendResetPasswordEmailVerificationLinkResponse =
+  v2SendResetPasswordEmailVerificationLinkResponse;
+
+export type UserServiceSendResetPasswordEmailVerificationLinkError = rpcStatus;
+
+export type UserServiceSendResetPasswordOtpData = {
+  body: v2SendResetPasswordOtpRequest;
+};
+
+export type UserServiceSendResetPasswordOtpResponse =
+  v2SendResetPasswordOtpResponse;
+
+export type UserServiceSendResetPasswordOtpError = rpcStatus;
 
 export type UserServiceSendSignupEmailVerificationLinkData = {
   body: v2SendSignupEmailVerificationLinkRequest;

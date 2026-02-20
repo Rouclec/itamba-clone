@@ -229,6 +229,14 @@ export default function SignInPage() {
             )}
           </button>
         </div>
+        <p className="text-right">
+          <LocaleLink
+            href="/auth/forgot-password"
+            className="text-sm text-secondary hover:underline font-medium"
+          >
+            {t('auth.forgotPassword')}
+          </LocaleLink>
+        </p>
 
         <Button
           type="submit"

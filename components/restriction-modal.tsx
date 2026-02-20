@@ -187,7 +187,7 @@ export function getRestrictionCopy(
       return {
         titleLine1: t('restriction.cataloguesLimitTitle1'),
         titleLine2: t('restriction.cataloguesLimitTitle2'),
-        body: t('restriction.cataloguesLimitBody'),
+        body: t('restriction.cataloguesLimitBody').replace('{{count}}', String(limit ?? 0)),
         ctaText: t('restriction.upgradeNow'),
         imageOverlay: {
           lineText: t('restriction.premiumFeatureLine'),

@@ -10,14 +10,13 @@ import {
   RestrictionModal,
   getRestrictionCopy,
 } from '@/components/restriction-modal'
+import { CataloguesPageContent } from '@/components/client-library/catalogues-page-content'
 
 /**
- * Categories (catalogues) screen. Users with a finite catalogues limit
- * (e.g. guest, student) see the restriction modal and are redirected
- * to the library home when they close it. Direct URL and nav click
- * are both handled here.
+ * Catalogues dashboard at /client/catalogues. All users with at least one catalogue
+ * can see the list. Only users with 0 catalogues see the restriction modal.
  */
-export default function ClientCategoriesPage() {
+export default function ClientCataloguesPage() {
   const router = useRouter()
   const path = useLocalePath()
   const { t } = useT('translation')
@@ -25,7 +24,7 @@ export default function ClientCategoriesPage() {
   const role = currentUser?.userRole ?? user?.role ?? undefined
   const userId = currentUser?.userId ?? undefined
   const { cataloguesLimit } = useRestrictions(role, userId)
-  const hasAccess = cataloguesLimit === -1
+  const hasAccess = cataloguesLimit === -1 || cataloguesLimit > 0
 
   const redirectToLibrary = () => {
     router.replace(path('/client'))
@@ -43,13 +42,8 @@ export default function ClientCategoriesPage() {
 
   if (hasAccess) {
     return (
-      <div className="space-y-6 p-4 md:p-6">
-        <h1 className="text-2xl font-semibold text-primary">
-          {t('librarySidebar.catalogues')}
-        </h1>
-        <p className="text-body-text">
-          {t('client.cataloguesPlaceholder')}
-        </p>
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col p-4 md:p-6">
+        <CataloguesPageContent />
       </div>
     )
   }

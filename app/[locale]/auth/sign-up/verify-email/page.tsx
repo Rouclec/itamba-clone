@@ -5,21 +5,7 @@ import { useRouter, useSearchParams, useParams } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { useLocalePath } from "@/lib/use-locale";
 import { v2SignupRequest } from "@/@hey_api/users.swagger";
-import { cookieName } from "@/app/i18n/settings";
-import { locales } from "@/app/i18n/settings";
-
-function getPreferredLocaleFromCookie(): string | null {
-  if (typeof document === "undefined") return null;
-  const match = document.cookie.match(
-    new RegExp(
-      "(^| )" + cookieName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "=([^;]+)",
-    ),
-  );
-  const value = match ? match[2].trim() : null;
-  return value && locales.includes(value as (typeof locales)[number])
-    ? value
-    : null;
-}
+import { getPreferredLocaleFromCookie } from "@/app/i18n/get-preferred-locale";
 
 /**
  * Backend redirects users here: /{locale}/auth/sign-up/verify-email?token=xyz
