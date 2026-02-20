@@ -26,6 +26,7 @@ import { LocaleLink } from '@/components/locale-link'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/lib/auth-context'
 import { useRestrictions } from '@/hooks/use-restrictions'
+import { useLibraryLayout } from './client-library-layout'
 
 const SIDEBAR_WIDTH = '16rem'
 
@@ -34,11 +35,15 @@ type SectionKey = 'library' | 'myDashboard'
 export function LibrarySidebarContent() {
   const { t } = useT('translation')
   const { currentUser, user } = useAuth()
+  const { isMobile, setSidebarOpen } = useLibraryLayout()
   const role = currentUser?.userRole ?? user?.role ?? undefined
   const userId = currentUser?.userId ?? undefined
   const { cataloguesLimit } = useRestrictions(role, userId)
   const canAccessCatalogues = cataloguesLimit === -1 || cataloguesLimit > 0
   const pathname = usePathname() ?? ''
+  const closeSidebarOnNav = () => {
+    if (isMobile) setSidebarOpen(false)
+  }
   const cataloguesActive = pathname.includes('/client/catalogues')
   const bookmarksActive = pathname.includes('/client/bookmarks')
   const notesActive = pathname.includes('/client/notes')
@@ -72,7 +77,7 @@ export function LibrarySidebarContent() {
     <div className="flex h-full min-h-0 w-(--library-sidebar-width) flex-col overflow-y-auto overflow-x-hidden bg-white">
       {/* Logo + name — height matches header so the border line is straight */}
       <div className="flex h-20 shrink-0 items-center border-b border-border p-4">
-        <LocaleLink href="/client" className="flex items-start gap-2">
+        <LocaleLink href="/client" className="flex items-start gap-2" onClick={closeSidebarOnNav}>
           <div className="relative h-11 w-12 shrink-0">
             <Image
               src="/assets/logo.png"
@@ -124,6 +129,7 @@ export function LibrarySidebarContent() {
                 navChildClass,
                 documentsActive ? navChildActiveClass : navChildInactiveClass
               )}
+              onClick={closeSidebarOnNav}
             >
               <MdOutlineTextSnippet className="size-4" />
               {t('librarySidebar.documents')}
@@ -135,6 +141,7 @@ export function LibrarySidebarContent() {
                   navChildClass,
                   cataloguesActive ? navChildActiveClass : navChildInactiveClass
                 )}
+                onClick={closeSidebarOnNav}
               >
                 <MdOutlineCategory className="size-4" />
                 {t('librarySidebar.catalogues')}
@@ -209,6 +216,7 @@ export function LibrarySidebarContent() {
           <LocaleLink
             href="/client/notes"
             className={cn(navSiblingClass, notesActive && navChildActiveClass)}
+            onClick={closeSidebarOnNav}
           >
             <MdNotes className="size-4" />
             {t('librarySidebar.notes')}
@@ -216,6 +224,7 @@ export function LibrarySidebarContent() {
           <LocaleLink
             href="/client/bookmarks"
             className={cn(navSiblingClass, bookmarksActive && navChildActiveClass)}
+            onClick={closeSidebarOnNav}
           >
             <MdBookmarkBorder className="size-4" />
             {t('librarySidebar.bookmarkedArticles')}

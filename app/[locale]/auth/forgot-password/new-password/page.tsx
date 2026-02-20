@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { Suspense, useState, useMemo, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { SignupLayout } from '@/components/auth/signup-layout';
 import { FormInput } from '@/components/auth/form-input';
@@ -14,7 +14,7 @@ import { useForgotPassword } from '@/contexts/forgot-password-context';
 import { useMutation } from '@tanstack/react-query';
 import { userServiceResetPasswordMutation } from '@/@hey_api/users.swagger/@tanstack/react-query.gen';
 
-export default function ForgotPasswordNewPasswordPage() {
+function ForgotPasswordNewPasswordContent() {
   const router = useRouter();
   const path = useLocalePath();
   const searchParams = useSearchParams();
@@ -232,5 +232,13 @@ export default function ForgotPasswordNewPasswordPage() {
         </button>
       </form>
     </SignupLayout>
+  );
+}
+
+export default function ForgotPasswordNewPasswordPage() {
+  return (
+    <Suspense fallback={null}>
+      <ForgotPasswordNewPasswordContent />
+    </Suspense>
   );
 }
