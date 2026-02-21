@@ -137,11 +137,20 @@
     "studentIdCard": "Carte d'étudiant",
     "transcriptReportCard": "Relevé de notes / bulletin",
     "dragAndDropOrSelect": "Glissez-déposez ou sélectionnez un document",
-    "fileConstraints": "JPG, PNG ou PDF, 10 Mo maximum",
+    "fileConstraints": "JPG, PNG ou PDF, 7 Mo maximum",
     "selectDocument": "Choisir un document",
     "takeLivePhoto": "Prendre une photo",
     "save": "Enregistrer",
-    "remove": "Supprimer"
+    "remove": "Supprimer",
+    "yearFromCannotBeFuture": "La date de début ne peut pas être dans le futur",
+    "yearToCannotBeBeforeFrom": "La date de fin ne peut pas être avant la date de début"
+  },
+  "studentProfileSuccess": {
+    "title": "Profil envoyé",
+    "message1": "Super ! Votre profil a bien été reçu et est en cours d'examen.",
+    "message2Highlight": "Cela prend généralement 48 heures.",
+    "message2Rest": " Parcourez la bibliothèque pendant que nous examinons vos informations.",
+    "startBrowsing": "Commencer à parcourir"
   },
   "verification": {
     "verifying": "Vérification...",

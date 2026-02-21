@@ -58,6 +58,33 @@ export const GUEST_FIRST_LOGIN_MODAL_SEEN_KEY = "itamba_guest_first_login_modal_
 /** After signup/signin, redirect here if set (e.g. subscription payment URL from website). Cleared after redirect. */
 export const PENDING_SUBSCRIPTION_RETURN_KEY = "itamba_pending_subscription_return";
 
+/** Cache email verification success (token -> email) so we can recover after locale change. Cleared on sign out. */
+const EMAIL_VERIFIED_CACHE_KEY = "itamba-email-verified-cache";
+
+export function setEmailVerifiedCache(token: string, email: string): void {
+  if (typeof window === "undefined") return;
+  try {
+    const raw = sessionStorage.getItem(EMAIL_VERIFIED_CACHE_KEY);
+    const cache = raw ? (JSON.parse(raw) as Record<string, string>) : {};
+    cache[token] = email;
+    sessionStorage.setItem(EMAIL_VERIFIED_CACHE_KEY, JSON.stringify(cache));
+  } catch {
+    // ignore
+  }
+}
+
+export function getEmailVerifiedCache(token: string): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = sessionStorage.getItem(EMAIL_VERIFIED_CACHE_KEY);
+    if (!raw) return null;
+    const cache = JSON.parse(raw) as Record<string, string>;
+    return cache[token] ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export function getPendingSubscriptionReturn(): string | null {
   if (typeof window === "undefined") return null;
   try {
@@ -121,6 +148,9 @@ export function isAuthenticated(): boolean {
   return !isJwtExpired(token);
 }
 
+export const SESSION_CLEARED_EVENT = "itamba-session-cleared";
+
+/** Clear all session data and notify the app (e.g. auth context) to log out immediately. */
 export function clearSession() {
   Cookies.remove("token");
   Cookies.remove("subscription");
@@ -134,6 +164,8 @@ export function clearSession() {
     localStorage.removeItem(CURRENT_USER_STORAGE_KEY);
     localStorage.removeItem(GUEST_FIRST_LOGIN_MODAL_SEEN_KEY);
     localStorage.removeItem(PENDING_SUBSCRIPTION_RETURN_KEY);
+    sessionStorage.removeItem(EMAIL_VERIFIED_CACHE_KEY);
+    window.dispatchEvent(new CustomEvent(SESSION_CLEARED_EVENT));
   }
 }
 

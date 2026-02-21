@@ -50,7 +50,7 @@ export default function PaymentSuccessPage() {
       const user = await fetchUserById(userId);
       applyFetchedUser(user, setCurrentUser, setUser);
       if (isStudent) {
-        router.push(path("/profile/complete"));
+        router.push(path("/profile/complete/student"));
       } else {
         router.push(path("/client"));
       }

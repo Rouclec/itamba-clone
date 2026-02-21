@@ -1,23 +1,22 @@
 "use client";
 
 import { useRef, useCallback } from "react";
-import { CloudUpload, X, FileText } from "lucide-react";
+import { CloudUpload, X, FileText, CircleCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
+import { MdOutlineTextSnippet } from "react-icons/md";
 
 const ACCEPT = "image/jpeg,image/png,image/webp,application/pdf";
-const MAX_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
+export const KYC_MAX_SIZE_BYTES = 7 * 1024 * 1024; // 7MB
+const MAX_SIZE_BYTES = KYC_MAX_SIZE_BYTES;
 
 export type StudentDocumentType =
   | "school_fee_receipt"
   | "student_id_card"
   | "transcript_report_card";
 
-const DOCUMENT_TYPE_KEYS: Record<
-  StudentDocumentType,
-  string
-> = {
+const DOCUMENT_TYPE_KEYS: Record<StudentDocumentType, string> = {
   school_fee_receipt: "studentProfile.schoolFeeReceipt",
   student_id_card: "studentProfile.studentIdCard",
   transcript_report_card: "studentProfile.transcriptReportCard",
@@ -63,7 +62,7 @@ export function DocumentUpload({
       return "JPG, PNG or PDF only";
     }
     if (f.size > MAX_SIZE_BYTES) {
-      return "File size must be 10MB or less";
+      return "File size must be 7MB or less";
     }
     return null;
   }, []);
@@ -123,13 +122,16 @@ export function DocumentUpload({
             type="button"
             onClick={() => !disabled && onDocumentTypeChange(type)}
             className={cn(
-              "rounded-md border px-4 py-2 text-sm font-medium transition-colors",
+              "flex items-center gap-1 rounded-md px-2.5 py-0.5 text-sm font-semibold transition-all",
               documentType === type
-                ? "border-primary bg-primary/10 text-primary"
-                : "border-border bg-white text-muted-foreground hover:border-primary/50",
+                ? "bg-primary text-white"
+                : "bg-surface text-body-text hover:bg-hover",
               disabled && "pointer-events-none opacity-50",
             )}
           >
+            <CircleCheck
+              className={`size-3 ${documentType === type ? "block" : "hidden"}`}
+            />
             {t(DOCUMENT_TYPE_KEYS[type])}
           </button>
         ))}
@@ -175,9 +177,7 @@ export function DocumentUpload({
         </div>
       </div>
 
-      {error && (
-        <p className="text-sm text-destructive font-medium">{error}</p>
-      )}
+      {error && <p className="text-sm text-destructive font-medium">{error}</p>}
 
       {/* Upload progress */}
       {progress !== undefined && progress > 0 && (
@@ -188,8 +188,8 @@ export function DocumentUpload({
 
       {/* Selected file */}
       {file && (
-        <div className="flex items-center gap-3 rounded-lg border border-border bg-muted/20 px-4 py-3">
-          <FileText className="size-8 shrink-0 text-muted-foreground" />
+        <div className="flex items-center gap-3 rounded-lg border border-border px-4 py-3">
+          <MdOutlineTextSnippet className="size-7 shrink-0 text-body-text" />
           <div className="min-w-0 flex-1">
             <p className="font-medium truncate">{file.name}</p>
             <p className="text-xs text-muted-foreground">
@@ -200,10 +200,10 @@ export function DocumentUpload({
             type="button"
             onClick={() => onFileChange(null)}
             disabled={disabled}
-            className="shrink-0 rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+            className="shrink-0 rounded p-1 text-body-text bg-surface hover:bg-hover hover:text-foreground transition-colors"
             aria-label={t("studentProfile.remove")}
           >
-            <X className="size-5" />
+            <X className="size-4" />
           </button>
         </div>
       )}

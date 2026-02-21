@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useRef } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth-context";
@@ -9,10 +9,46 @@ import { useT } from "@/app/i18n/client";
 import { VerificationLoader } from "@/components/auth/verification-loader";
 import { userServiceVerifyEmailOptions } from "@/@hey_api/users.swagger/@tanstack/react-query.gen";
 import { v2SignupRequest } from "@/@hey_api/users.swagger";
+import {
+  getEmailVerifiedCache,
+  setEmailVerifiedCache,
+} from "@/utils/auth/session";
 
 function getBackendErrorMessage(error: unknown): string | undefined {
   const err = error as { response?: { data?: { message?: string } } };
   return err?.response?.data?.message;
+}
+
+/** True if the error suggests the token was already used (e.g. after locale change). */
+function isAlreadyVerifiedError(message: string | undefined): boolean {
+  if (!message) return false;
+  const lower = message.toLowerCase();
+  return (
+    lower.includes("already") && (lower.includes("verif") || lower.includes("used"))
+  );
+}
+
+function proceedToPassword(
+  email: string,
+  token: string,
+  signupRequest: v2SignupRequest | null,
+  setSignupRequest: (r: v2SignupRequest) => void,
+  router: ReturnType<typeof useRouter>,
+  path: ReturnType<typeof useLocalePath>,
+) {
+  const rebuilt: v2SignupRequest = {
+    authFactor: {
+      type: "FACTOR_TYPE_EMAIL_VERIFICATION",
+      secretValue: token,
+      id: email,
+    },
+    email,
+    ...(signupRequest?.phoneNumber && {
+      phoneNumber: signupRequest.phoneNumber,
+    }),
+  };
+  setSignupRequest(rebuilt);
+  router.push(path("/auth/signup/password"));
 }
 
 function EmailVerifyContent() {
@@ -23,10 +59,14 @@ function EmailVerifyContent() {
   const { signupRequest, setSignupRequest } = useAuth();
   const successNavigateTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const successHandledRef = useRef(false);
+  const [successFromCache, setSuccessFromCache] = useState(false);
 
   const tokenFromUrl = searchParams.get("token");
   const tokenFromContext = signupRequest?.authFactor?.secretValue;
   const token = (tokenFromUrl ?? tokenFromContext)?.trim() || null;
+
+  const cachedEmail = token ? getEmailVerifiedCache(token) : null;
+  const skipQuery = !!cachedEmail;
 
   const {
     data,
@@ -40,42 +80,82 @@ function EmailVerifyContent() {
         token: token ?? "",
       },
     }),
-    enabled: ready && !!token,
+    enabled: ready && !!token && !skipQuery,
   });
 
   const hasToken = !!token;
-  const isVerifying = hasToken && isPending;
-  const isError = !hasToken || isQueryError || (!!data && !(data.verified && data.email));
+  const backendMessage = getBackendErrorMessage(verifyEmailError);
+  const treatErrorAsSuccess =
+    isQueryError &&
+    isAlreadyVerifiedError(backendMessage) &&
+    !!cachedEmail;
+
+  const isVerifying = hasToken && isPending && !successFromCache;
+  const isSuccess =
+    (!!data?.verified && !!data?.email) ||
+    successFromCache ||
+    treatErrorAsSuccess;
+  const isError =
+    !hasToken ||
+    ((isQueryError || (!!data && !(data.verified && data.email))) && !treatErrorAsSuccess);
   const errorMessage =
     !hasToken
       ? t("verification.verificationFailedDefault")
-      : getBackendErrorMessage(verifyEmailError) ??
-        (data && !(data.verified && data.email)
-          ? t("verification.verificationFailedDefault")
-          : t("verification.verificationErrorGeneric"));
+      : treatErrorAsSuccess
+        ? ""
+        : getBackendErrorMessage(verifyEmailError) ??
+          (data && !(data.verified && data.email)
+            ? t("verification.verificationFailedDefault")
+            : t("verification.verificationErrorGeneric"));
 
+  // Success from API: cache and proceed
   useEffect(() => {
-    if (!data?.verified || !data?.email) return;
+    if (!data?.verified || !data?.email || !token) return;
     if (successHandledRef.current) return;
     successHandledRef.current = true;
-
-    const rebuilt: v2SignupRequest = {
-      authFactor: {
-        type: "FACTOR_TYPE_EMAIL_VERIFICATION",
-        secretValue: token ?? "",
-        id: data.email,
-      },
-      email: data.email,
-      ...(signupRequest?.phoneNumber && {
-        phoneNumber: signupRequest.phoneNumber,
-      }),
-    };
-    setSignupRequest(rebuilt);
+    setEmailVerifiedCache(token, data.email);
     successNavigateTimeoutRef.current = setTimeout(() => {
       successNavigateTimeoutRef.current = null;
-      router.push(path("/auth/signup/password"));
+      proceedToPassword(
+        data.email!,
+        token,
+        signupRequest,
+        setSignupRequest,
+        router,
+        path,
+      );
     }, 1500);
-  }, [data?.verified, data?.email, signupRequest?.phoneNumber, setSignupRequest, router, path]);
+  }, [data?.verified, data?.email, token, signupRequest, setSignupRequest, router, path]);
+
+  // Success from cache (e.g. after locale change): skip API and proceed
+  useEffect(() => {
+    if (!cachedEmail || !token || successHandledRef.current) return;
+    successHandledRef.current = true;
+    setSuccessFromCache(true);
+    proceedToPassword(
+      cachedEmail,
+      token,
+      signupRequest,
+      setSignupRequest,
+      router,
+      path,
+    );
+  }, [cachedEmail, token, signupRequest, setSignupRequest, router, path]);
+
+  // API returned "already verified" and we have cache: proceed
+  useEffect(() => {
+    if (!treatErrorAsSuccess || !cachedEmail || !token || successHandledRef.current)
+      return;
+    successHandledRef.current = true;
+    proceedToPassword(
+      cachedEmail,
+      token,
+      signupRequest,
+      setSignupRequest,
+      router,
+      path,
+    );
+  }, [treatErrorAsSuccess, cachedEmail, token, signupRequest, setSignupRequest, router, path]);
 
   useEffect(() => {
     return () => {

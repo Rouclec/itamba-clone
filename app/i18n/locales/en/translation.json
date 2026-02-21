@@ -137,11 +137,20 @@
     "studentIdCard": "Student Id card",
     "transcriptReportCard": "Transcript/report card",
     "dragAndDropOrSelect": "Drag and drop or select document to upload file",
-    "fileConstraints": "JPG, PNG or PDF, file size no more than 10MB",
+    "fileConstraints": "JPG, PNG or PDF, file size no more than 7MB",
     "selectDocument": "Select document",
     "takeLivePhoto": "Take a live photo",
     "save": "Save",
-    "remove": "Remove"
+    "remove": "Remove",
+    "yearFromCannotBeFuture": "From cannot be in the future",
+    "yearToCannotBeBeforeFrom": "To cannot be before From"
+  },
+  "studentProfileSuccess": {
+    "title": "Profile Submitted",
+    "message1": "Awesome!! Your profile has been received and under review!",
+    "message2Highlight": "This usually takes 48 hours.",
+    "message2Rest": " Start browsing the library while we review your information.",
+    "startBrowsing": "Start browsing"
   },
   "verification": {
     "verifying": "Verifying...",

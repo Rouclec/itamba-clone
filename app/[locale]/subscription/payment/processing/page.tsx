@@ -99,7 +99,10 @@ export default function ProcessingPaymentPage() {
         setMessage(t("payment.verifyingPendingLater"));
         clearInterval(interval);
         setTimeout(() => {
-          router.push(path("/subscription/payment/error?message=pending"));
+          const params = new URLSearchParams({ message: "pending" });
+          if (clientReference) params.set("client_reference", clientReference);
+          if (tier) params.set("tier", tier);
+          router.push(path(`/subscription/payment/error?${params.toString()}`));
         }, 1000);
       }
     }, PROGRESS_INTERVAL_MS);
@@ -139,7 +142,10 @@ export default function ProcessingPaymentPage() {
       setProgress(100);
       setMessage(t("payment.verifyingFailed"));
       setTimeout(() => {
-        router.push(path("/subscription/payment/error?message=failed"));
+        const params = new URLSearchParams({ message: "failed" });
+        if (clientReference) params.set("client_reference", clientReference);
+        if (tier) params.set("tier", tier);
+        router.push(path(`/subscription/payment/error?${params.toString()}`));
       }, 1000);
       return;
     }
@@ -148,7 +154,10 @@ export default function ProcessingPaymentPage() {
       setProgress(100);
       setMessage(t("payment.verifyingCanceled"));
       setTimeout(() => {
-        router.push(path("/subscription/payment/error?message=cancelled"));
+        const params = new URLSearchParams({ message: "cancelled" });
+        if (clientReference) params.set("client_reference", clientReference);
+        if (tier) params.set("tier", tier);
+        router.push(path(`/subscription/payment/error?${params.toString()}`));
       }, 1000);
     }
   }, [
@@ -168,9 +177,12 @@ export default function ProcessingPaymentPage() {
     setProgress(100);
     setMessage(t("payment.verifyingError"));
     setTimeout(() => {
-      router.push(path("/subscription/payment/error?message=error"));
+      const params = new URLSearchParams({ message: "error" });
+      if (clientReference) params.set("client_reference", clientReference);
+      if (tier) params.set("tier", tier);
+      router.push(path(`/subscription/payment/error?${params.toString()}`));
     }, 1000);
-  }, [isError, router, path, t]);
+  }, [isError, router, path, t, clientReference, tier]);
 
   if (!clientReference || (hydrated && !userId)) {
     return (

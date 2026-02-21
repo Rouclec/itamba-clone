@@ -15,11 +15,13 @@ import React, {
 } from 'react';
 import {
   clearSession,
+  SESSION_CLEARED_EVENT,
   AUTH_STORAGE_KEY,
   SIGNUP_REQUEST_STORAGE_KEY,
   USER_ID_STORAGE_KEY,
   CURRENT_USER_STORAGE_KEY,
 } from '@/utils/auth/session';
+import { useRouter, usePathname } from 'next/navigation';
 
 export interface AuthUser {
   role: v2UserRole | v2AdminRole;
@@ -94,6 +96,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [currentUser, setCurrentUserState] = useState<v2User | null>(null);
   const [hydrated, setHydrated] = useState(false);
 
+  const router = useRouter();
+  const pathname = usePathname();
+
   useEffect(() => {
     if (typeof window === 'undefined') {
       setHydrated(true);
@@ -110,6 +115,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     );
     setHydrated(true);
   }, []);
+
+  // When token refresh fails, interceptor calls clearSession() which dispatches this event.
+  // Clear auth state and redirect to signin so the user is logged out immediately.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const handleSessionCleared = () => {
+      setUserState(null);
+      setSignupRequestState(null);
+      setUserIdState(null);
+      setCurrentUserState(null);
+      const locale = pathname?.split('/')[1] || 'en';
+      router.replace(`/${locale}/auth/signin`);
+    };
+    window.addEventListener(SESSION_CLEARED_EVENT, handleSessionCleared);
+    return () => window.removeEventListener(SESSION_CLEARED_EVENT, handleSessionCleared);
+  }, [router, pathname]);
 
   const setUser = useCallback((next: AuthUser | null) => {
     setUserState(next);
