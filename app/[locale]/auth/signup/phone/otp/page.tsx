@@ -93,7 +93,15 @@ export default function OTPVerifyPage() {
         if (data?.valid) {
           setSignupRequest(
             signupRequest
-              ? ({ ...signupRequest, otp: value } as v2SignupRequest)
+              ? {
+                  ...signupRequest,
+                  authFactor: {
+                    ...signupRequest.authFactor,
+                    type: "FACTOR_TYPE_SMS_OTP",
+                    id: requestId ?? signupRequest.authFactor?.id,
+                    secretValue: value,
+                  },
+                }
               : null,
           );
           toast.success(t("auth.otpVerified"));

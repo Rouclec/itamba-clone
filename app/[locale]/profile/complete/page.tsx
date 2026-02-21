@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { SignupLayout } from "@/components/auth/signup-layout";
 import { FormInput } from "@/components/auth/form-input";
@@ -16,17 +16,7 @@ import { userServiceCompleteProfileMutation } from "@/@hey_api/users.swagger/@ta
 import { toast } from "sonner";
 import { fetchUserById } from "@/hooks/use-user";
 import type { v2UserRole, v2AdminRole } from "@/@hey_api/users.swagger";
-
-function parseStoredPhone(phone: string | undefined): {
-  dialCode: string;
-  national: string;
-} {
-  if (!phone) return { dialCode: "+237", national: "" };
-  const match = phone.match(/^(\+\d+)(.*)$/);
-  if (match)
-    return { dialCode: match[1], national: match[2].replace(/\D/g, "") };
-  return { dialCode: "+237", national: phone.replace(/\D/g, "") };
-}
+import { parseStoredPhone } from "@/utils/phone";
 
 export default function CompleteProfilePage() {
   const router = useRouter();
@@ -53,6 +43,16 @@ export default function CompleteProfilePage() {
   const [fullNameError, setFullNameError] = useState<string | null>(null);
   const [emailError, setEmailError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+
+  // Sync phone/dialCode from currentUser when it loads (e.g. after auth hydration from localStorage).
+  // Without this, the disabled phone field stays empty for phone signups because state is initialized before currentUser is set.
+  useEffect(() => {
+    if (currentUser?.telephone) {
+      const parsed = parseStoredPhone(currentUser.telephone);
+      setDialCode(parsed.dialCode);
+      setPhone(parsed.national);
+    }
+  }, [currentUser?.telephone]);
 
   const isLastStep = isPhoneSignup ? step === 3 : step === 2;
   const showLocation =
@@ -190,11 +190,7 @@ export default function CompleteProfilePage() {
               value={phone}
               onChange={setPhone}
               onCountryChange={(c) => setDialCode(c.dial_code)}
-              defaultCountryCode={
-                currentUser?.telephone
-                  ? parseStoredPhone(currentUser.telephone).dialCode
-                  : undefined
-              }
+              defaultCountryCode={dialCode}
               disabled={isPhoneSignup}
               required={!isPhoneSignup}
             />

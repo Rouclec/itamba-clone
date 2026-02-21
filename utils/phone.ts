@@ -67,3 +67,29 @@ export function normalizePhone(dialCode: string, nationalDigits: string): string
   if (!parsed || !parsed.isValid()) return null;
   return toE164(parsed);
 }
+
+/**
+ * Split a stored phone number (e.g. "+237675224929", "+1 234 567 8900") into dial code and national number.
+ * Uses libphonenumber when possible for correct country detection; falls back to regex for incomplete numbers.
+ */
+export function parseStoredPhone(phone: string | undefined): {
+  dialCode: string;
+  national: string;
+} {
+  const defaultDial = "+237";
+  if (!phone?.trim()) return { dialCode: defaultDial, national: "" };
+  const full = phone.trim().startsWith("+") ? phone.trim() : `+${phone.replace(/\D/g, "")}`;
+  const parsed = parsePhone(full);
+  if (parsed?.isValid()) {
+    const dialCode = `+${parsed.countryCallingCode}`;
+    const national = parsed.nationalNumber;
+    return { dialCode, national };
+  }
+  const match = full.match(/^(\+\d+)(.*)$/);
+  if (match)
+    return {
+      dialCode: match[1],
+      national: match[2].replace(/\D/g, ""),
+    };
+  return { dialCode: defaultDial, national: phone.replace(/\D/g, "") };
+}

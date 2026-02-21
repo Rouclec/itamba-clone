@@ -42,6 +42,16 @@ export function PhoneInput({
   });
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  // Sync selected country when parent passes updated defaultCountryCode (e.g. from stored phone).
+  useEffect(() => {
+    if (!defaultCountryCode) return;
+    const found = countries.find(
+      (c) =>
+        c.code === defaultCountryCode || c.dial_code === defaultCountryCode,
+    );
+    if (found) setSelectedCountry(found);
+  }, [defaultCountryCode]);
+
   // Close dropdown when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
