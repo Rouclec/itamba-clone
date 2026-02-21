@@ -1,6 +1,7 @@
+
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Progress } from "@/components/ui/progress";
 import { useLocalePath } from "@/lib/use-locale";
@@ -29,7 +30,7 @@ function applyFetchedUser(
   setUser({ role, identifier });
 }
 
-export default function ProcessingPaymentPage() {
+function ProcessingPaymentPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const path = useLocalePath();
@@ -205,5 +206,22 @@ export default function ProcessingPaymentPage() {
         />
       </div>
     </div>
+  );
+}
+
+function ProcessingPaymentPageFallback() {
+  const { t } = useT("translation");
+  return (
+    <div className="flex min-h-[60vh] items-center justify-center px-6 py-8">
+      <p className="text-muted-foreground">{t("common.loading")}</p>
+    </div>
+  );
+}
+
+export default function ProcessingPaymentPage() {
+  return (
+    <Suspense fallback={<ProcessingPaymentPageFallback />}>
+      <ProcessingPaymentPageContent />
+    </Suspense>
   );
 }

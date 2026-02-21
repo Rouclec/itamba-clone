@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { useLocalePath } from "@/lib/use-locale";
@@ -25,7 +25,7 @@ function applyFetchedUser(
   setUser({ role, identifier });
 }
 
-export default function PaymentErrorPage() {
+function PaymentErrorPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const path = useLocalePath();
@@ -125,5 +125,22 @@ export default function PaymentErrorPage() {
         </Button>
       </div>
     </div>
+  );
+}
+
+function PaymentErrorPageFallback() {
+  const { t } = useT("translation");
+  return (
+    <div className="flex min-h-[60vh] items-center justify-center px-6 py-8">
+      <p className="text-muted-foreground">{t("common.loading")}</p>
+    </div>
+  );
+}
+
+export default function PaymentErrorPage() {
+  return (
+    <Suspense fallback={<PaymentErrorPageFallback />}>
+      <PaymentErrorPageContent />
+    </Suspense>
   );
 }

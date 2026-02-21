@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
@@ -84,7 +84,7 @@ function PaymentMethodCard({
   );
 }
 
-export default function PaymentPage() {
+function PaymentPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const path = useLocalePath();
@@ -393,5 +393,22 @@ export default function PaymentPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+function PaymentPageFallback() {
+  const { t } = useT("translation");
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-white">
+      <p className="text-muted-foreground">{t("common.loading")}</p>
+    </div>
+  );
+}
+
+export default function PaymentPage() {
+  return (
+    <Suspense fallback={<PaymentPageFallback />}>
+      <PaymentPageContent />
+    </Suspense>
   );
 }
