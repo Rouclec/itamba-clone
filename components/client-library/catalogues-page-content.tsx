@@ -171,7 +171,9 @@ function CatalogueTableRow({
         }
       }}
     >
-      <TableCell className="p-4 font-medium text-body-text">{title}</TableCell>
+      <TableCell className="max-w-[240px] p-4 font-medium text-body-text" title={title || undefined}>
+        <span className="block min-w-0 truncate">{title}</span>
+      </TableCell>
       <TableCell
         className="max-w-[200px] truncate p-4 text-body-text sm:max-w-[300px]"
         title={description || undefined}

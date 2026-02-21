@@ -8,6 +8,9 @@ import { useT } from '@/app/i18n/client'
 import { Button } from '@/components/ui/button'
 import { ShieldX } from 'lucide-react'
 import { isAdminRole } from '@/utils/auth/role'
+import { AdminLayout as AdminShell } from '@/components/admin/admin-layout'
+import { AdminHeader } from '@/components/admin/admin-header'
+import { LibraryFooter } from '@/components/client-library/library-footer'
 
 export default function AdminLayout({
   children,
@@ -25,7 +28,6 @@ export default function AdminLayout({
       router.replace(path('/auth/signin'))
       return
     }
-    // If user.role !== 'admin', layout renders restricted view below
   }, [hydrated, user, router, path])
 
   if (!hydrated) {
@@ -58,5 +60,17 @@ export default function AdminLayout({
     )
   }
 
-  return <>{children}</>
+  return (
+    <AdminShell>
+      <AdminHeader />
+      <div className="flex-1 min-h-0 flex flex-col bg-[#F9F9F9]">
+        <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-4 md:p-6">
+          {children}
+        </div>
+        <div className="shrink-0">
+          <LibraryFooter />
+        </div>
+      </div>
+    </AdminShell>
+  )
 }

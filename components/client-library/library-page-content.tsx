@@ -240,13 +240,17 @@ export function DocumentTableRow({
         }
       }}
     >
-      <TableCell className="px-4 py-7">
-        <div className="flex items-center gap-2">
-          <MdOutlineTextSnippet className="size-4 text-muted-foreground" />
-          {doc.reference}
+      <TableCell className="max-w-[240px] px-4 py-7">
+        <div className="flex items-center gap-2 min-w-0" title={doc.reference ?? undefined}>
+          <MdOutlineTextSnippet className="size-4 shrink-0 text-muted-foreground" />
+          <span className="truncate">{doc.reference}</span>
         </div>
       </TableCell>
-      <TableCell className="max-w-xs truncate px-4 py-7">{doc.title}</TableCell>
+      <TableCell className="max-w-[240px] px-4 py-7">
+        <span className="block min-w-0 truncate" title={doc.title ?? undefined}>
+          {doc.title}
+        </span>
+      </TableCell>
       <TableCell className="px-4 py-7">
         <span className="rounded-md bg-surface px-1.5 py-0.5 text-xs">
           {doc.type}

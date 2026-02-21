@@ -67,7 +67,7 @@ function SelectContent({
         data-slot="select-content"
         data-white-bg={whiteBackground ? '' : undefined}
         className={cn(
-          'bg-popover text-popover-foreground data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 relative z-50 max-h-(--radix-select-content-available-height) max-w-[min(var(--radix-select-trigger-width),calc(100vw-2rem))] min-w-[8rem] origin-(--radix-select-content-transform-origin) overflow-x-hidden overflow-y-auto rounded-md border shadow-md',
+          'bg-popover text-popover-foreground data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 relative z-50 max-h-[min(60vh,320px)] sm:max-h-[min(70vh,520px)] max-w-[min(100vw-2rem,520px)] min-w-[8rem] origin-(--radix-select-content-transform-origin) overflow-x-hidden overflow-y-auto rounded-md border shadow-md',
           position === 'popper' &&
             'data-[side=bottom]:translate-y-1 data-[side=left]:-translate-x-1 data-[side=right]:translate-x-1 data-[side=top]:-translate-y-1',
           whiteBackground && '!bg-white text-foreground [&_[data-slot=select-viewport]]:!bg-white',
@@ -85,9 +85,9 @@ function SelectContent({
         <SelectPrimitive.Viewport
           data-slot="select-viewport"
           className={cn(
-            'max-w-[calc(100vw-2rem)] p-1',
+            'min-w-0 max-w-[min(100vw-2rem,520px)] p-1',
             position === 'popper' &&
-              'h-[var(--radix-select-trigger-height)] w-full min-w-0 max-w-[min(var(--radix-select-trigger-width),calc(100vw-2rem))] scroll-my-1',
+              'w-full min-w-0 max-w-[min(100vw-2rem,520px)] scroll-my-1',
             whiteBackground && '!bg-white',
           )}
           style={whiteBackground ? { backgroundColor: '#ffffff' } : undefined}

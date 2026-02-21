@@ -69,6 +69,19 @@ export function isUserRole(role: string | undefined | null): boolean {
   return slug !== '' && USER_SLUGS.has(slug)
 }
 
+/**
+ * Human-readable label for admin role (e.g. "ADMIN_ROLE_SUPER_ADMIN" → "Super admin").
+ * Use for UI display; for i18n, map slug to translation key elsewhere.
+ */
+export function getAdminRoleDisplayLabel(role: string | undefined | null): string {
+  const slug = getRoleSlug(role)
+  if (!slug) return 'Admin'
+  return slug
+    .split('_')
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ')
+}
+
 /** Default admin role for mapping simple "admin" app role */
 export const DEFAULT_ADMIN_ROLE = 'ADMIN_ROLE_SUPER_ADMIN' as const
 

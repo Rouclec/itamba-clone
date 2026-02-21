@@ -55,7 +55,7 @@ export function RichTextViewer({ content }: { content: string | undefined }) {
   useEffect(() => {
     if (!editor) return
     try {
-      editor.commands.setContent(parsed, false)
+      editor.commands.setContent(parsed)
     } catch {
       // If content fails (e.g. schema mismatch), leave as empty or keep previous
     }

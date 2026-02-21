@@ -828,3 +828,106 @@ export function NoteEditor({
     </div>
   );
 }
+
+const editorContentClass =
+  "text-body-text text-sm font-merriweather min-h-[120px] px-3 py-2 focus:outline-none max-w-none " +
+  "[&_p]:mb-2 [&_strong]:font-bold [&_em]:italic [&_u]:underline [&_s]:line-through " +
+  "[&_h1]:text-2xl [&_h1]:font-bold [&_h1]:mt-4 [&_h1]:mb-2 [&_h1]:first:mt-0 " +
+  "[&_h2]:text-xl [&_h2]:font-bold [&_h2]:mt-4 [&_h2]:mb-2 [&_h2]:first:mt-0 " +
+  "[&_h3]:text-lg [&_h3]:font-semibold [&_h3]:mt-3 [&_h3]:mb-1.5 [&_h3]:first:mt-0 " +
+  "[&_h4]:text-base [&_h4]:font-semibold [&_h4]:mt-3 [&_h4]:mb-1.5 [&_h4]:first:mt-0 " +
+  "[&_h5]:text-sm [&_h5]:font-semibold [&_h5]:mt-2 [&_h5]:mb-1 [&_h5]:first:mt-0 " +
+  "[&_code]:bg-muted-fill [&_code]:px-1.5 [&_code]:rounded [&_code]:text-sm [&_code]:font-mono " +
+  "[&_pre]:bg-muted-fill [&_pre]:p-3 [&_pre]:rounded-md [&_pre]:overflow-x-auto [&_pre_code]:bg-transparent [&_pre_code]:p-0 " +
+  "[&_ul]:list-disc [&_ol]:list-decimal [&_li]:ml-4 [&_blockquote]:border-l-4 [&_blockquote]:border-border [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:text-muted-foreground " +
+  "[&_a]:underline [&_a]:text-[var(--tertiary)] [&_a]:cursor-pointer [&_a]:hover:text-[var(--tertiary)]/90 " +
+  "[&_table]:border-collapse [&_th]:border [&_th]:border-border [&_th]:bg-muted-fill/50 [&_th]:px-2 [&_th]:py-1 [&_td]:border [&_td]:border-border [&_td]:px-2 [&_td]:py-1";
+
+export interface RichTextEditorBlockProps {
+  value?: string;
+  onChange?: (json: string) => void;
+  label: string;
+  required?: boolean;
+  "aria-label"?: string;
+}
+
+/** Full rich text editor (same as notes: toolbar + content). Use for header/footer etc. */
+export function RichTextEditorBlock({
+  value,
+  onChange,
+  label,
+  required,
+  "aria-label": ariaLabel = "Rich text content",
+}: RichTextEditorBlockProps) {
+  const linkDialogOpenRef = useRef<(() => void) | null>(null);
+  const initialContent = useMemo(() => parseInitialContent(value), [value]);
+
+  const editor = useEditor({
+    immediatelyRender: false,
+    extensions: [
+      StarterKit.configure({
+        link: false,
+        heading: { levels: [1, 2, 3, 4, 5] },
+      }),
+      LinkExtension.configure({ openOnClick: false }),
+      TableKit,
+      TextAlign.configure({
+        types: ["paragraph", "heading"],
+      }),
+    ],
+    content: initialContent,
+    editable: true,
+    editorProps: {
+      attributes: { class: editorContentClass },
+      handleClick(view, _pos, event) {
+        if (
+          event.target instanceof HTMLElement &&
+          event.target.closest("a")
+        ) {
+          event.preventDefault();
+          linkDialogOpenRef.current?.();
+          return true;
+        }
+        return false;
+      },
+    },
+  });
+
+  useEffect(() => {
+    if (!editor || !onChange) return;
+    const onUpdate = () => {
+      const json = editor.getJSON();
+      onChange(JSON.stringify(json ?? EMPTY_DOC));
+    };
+    editor.on("transaction", onUpdate);
+    return () => editor.off("transaction", onUpdate);
+  }, [editor, onChange]);
+
+  useEffect(() => {
+    if (!editor?.view?.dom) return;
+    const syncLinkTitles = () => {
+      editor.view.dom.querySelectorAll<HTMLAnchorElement>("a[href]").forEach((a) => {
+        const href = a.getAttribute("href");
+        if (href) a.setAttribute("title", href);
+      });
+    };
+    syncLinkTitles();
+    editor.on("transaction", syncLinkTitles);
+    return () => editor.off("transaction", syncLinkTitles);
+  }, [editor]);
+
+  if (!editor) return null;
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      <span className="text-sm font-medium text-foreground">
+        {label}
+        {required && <span className="text-destructive ml-0.5">*</span>}
+      </span>
+      <div className="rounded-md border border-border bg-background overflow-hidden">
+        <Toolbar editor={editor} linkDialogOpenRef={linkDialogOpenRef} />
+        <EditorContent editor={editor} aria-label={ariaLabel} />
+      </div>
+    </div>
+  );
+}
