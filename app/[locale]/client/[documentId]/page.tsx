@@ -1,6 +1,6 @@
 "use client";
 
-import { useParams, useSearchParams } from "next/navigation";
+import { useParams, useSearchParams, useRouter } from "next/navigation";
 import { useState, useMemo, useRef, useCallback, useEffect } from "react";
 import Link from "next/link";
 import { ChevronDown, ChevronRight, ArrowLeft, List, Loader2 } from "lucide-react";
@@ -459,6 +459,7 @@ export function DocumentDetailView({
 }: DocumentDetailViewProps) {
   const params = useParams();
   const searchParams = useSearchParams();
+  const router = useRouter();
   const documentId = documentIdProp ?? (params?.documentId as string | undefined);
   const path = useLocalePath();
   const { t } = useT("translation");
@@ -702,6 +703,7 @@ export function DocumentDetailView({
         body={bookmarkRestrictionCopy.body}
         ctaText={bookmarkRestrictionCopy.ctaText}
         imageOverlay={bookmarkRestrictionCopy.imageOverlay}
+        onUpgrade={() => router.push(path("/subscription"))}
       />
     </div>
   );

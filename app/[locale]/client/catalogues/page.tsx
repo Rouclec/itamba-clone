@@ -30,6 +30,10 @@ export default function ClientCataloguesPage() {
     router.replace(path('/client'))
   }
 
+  const redirectToSubscription = () => {
+    router.push(path('/subscription'))
+  }
+
   const copy = useMemo(
     () =>
       getRestrictionCopy(
@@ -60,7 +64,7 @@ export default function ClientCataloguesPage() {
       ctaText={copy.ctaText}
       imageOverlay={copy.imageOverlay}
       onClose={redirectToLibrary}
-      onUpgrade={redirectToLibrary}
+      onUpgrade={redirectToSubscription}
     />
   )
 }

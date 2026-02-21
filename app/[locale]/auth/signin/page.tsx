@@ -19,7 +19,7 @@ import { toFullNumber, isValidPhone, normalizePhone } from "@/utils/phone";
 import { useMutation } from "@tanstack/react-query";
 import { userServiceAuthenticateMutation } from "@/@hey_api/users.swagger/@tanstack/react-query.gen";
 import { setAuthorizationHeaders } from "@/utils/inteceptor";
-import { setRefreshTokenInStorage } from "@/utils/auth/session";
+import { setRefreshTokenInStorage, getPendingSubscriptionReturn, clearPendingSubscriptionReturn } from "@/utils/auth/session";
 import { fetchUserById } from "@/hooks/use-user";
 import { isAdminRole, DEFAULT_USER_ROLE } from "@/utils/auth/role";
 import type { v2UserRole, v2AdminRole } from "@/@hey_api/users.swagger";
@@ -132,7 +132,13 @@ export default function SignInPage() {
       setUser({ role, identifier });
 
       toast.success(t("auth.signIn"));
-      router.push(path(isAdminRole(role) ? "/admin" : "/client"));
+      const pendingReturn = getPendingSubscriptionReturn();
+      if (pendingReturn) {
+        clearPendingSubscriptionReturn();
+        router.push(pendingReturn);
+      } else {
+        router.push(path(isAdminRole(role) ? "/admin" : "/client"));
+      }
     } catch {
       // onError toast handled by mutation
     } finally {

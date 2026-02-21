@@ -122,7 +122,9 @@ export interface DocumentDisplayItem {
   language: string;
 }
 
-export function mapDocumentToDisplay(doc: v2PublishedDocument): DocumentDisplayItem {
+export function mapDocumentToDisplay(
+  doc: v2PublishedDocument,
+): DocumentDisplayItem {
   const typeLabel =
     doc.documentType?.titles?.en ??
     doc.documentType?.titles?.fr ??
@@ -251,13 +253,20 @@ export function DocumentTableRow({
         </span>
       </TableCell>
       <TableCell className="px-4 py-7">{doc.articles}</TableCell>
-      <TableCell className="px-4 py-7">{formatDocumentDate(doc.issued, locale)}</TableCell>
-      <TableCell className="uppercase text-right px-4 py-7">{doc.language}</TableCell>
+      <TableCell className="px-4 py-7">
+        {formatDocumentDate(doc.issued, locale)}
+      </TableCell>
+      <TableCell className="uppercase text-right px-4 py-7">
+        {doc.language}
+      </TableCell>
     </TableRow>
   );
 }
 
 export function LibraryPageContent() {
+  const router = useRouter();
+  const path = useLocalePath();
+
   const { t, i18n } = useT("translation");
   const searchParams = useSearchParams();
   const [view, setView] = useState<"grid" | "list">("grid");
@@ -391,11 +400,19 @@ export function LibraryPageContent() {
 
   const maxAccessiblePage = useMemo(() => {
     if (documentsLimit < 0) return totalPages;
-    return Math.min(totalPages, Math.max(1, Math.ceil(documentsLimit / PAGE_SIZE)));
+    return Math.min(
+      totalPages,
+      Math.max(1, Math.ceil(documentsLimit / PAGE_SIZE)),
+    );
   }, [documentsLimit, totalPages]);
 
   const documentsRestrictionCopy = useMemo(
-    () => getRestrictionCopy("documents-limit", t, documentsLimit < 0 ? undefined : documentsLimit),
+    () =>
+      getRestrictionCopy(
+        "documents-limit",
+        t,
+        documentsLimit < 0 ? undefined : documentsLimit,
+      ),
     [t, documentsLimit],
   );
 
@@ -410,253 +427,259 @@ export function LibraryPageContent() {
   return (
     <div className="flex h-full min-h-0 min-w-0 flex-col overflow-x-hidden overflow-y-auto">
       <div className="min-h-0 min-w-0 flex-1 space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold text-primary">
-            {t("client.libraryWithCount", { count: totalItems })}
-          </h1>
-          <p className="text-body-text font-normal">
-            {t("client.librarySubtitle")}
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={() => setView(view === "grid" ? "list" : "grid")}
-          className={cn(
-            "flex items-center gap-1.5 rounded-md border border-border px-3 py-2 text-sm font-medium hover:bg-hover",
-            view === "grid" ? "bg-white" : "bg-background",
-          )}
-        >
-          {view === "grid" ? (
-            <>
-              <List className="size-4" />
-              {t("client.listView")}
-            </>
-          ) : (
-            <>
-              <LayoutGrid className="size-4" />
-              {t("client.gridView")}
-            </>
-          )}
-        </button>
-      </div>
-
-      <div className="flex min-w-0 flex-col gap-4 sm:justify-between bg-surface p-4 rounded-lg">
-        <div className="relative min-w-0 flex-1 bg-white rounded-lg">
-          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder={t("client.searchPlaceholder")}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-9 border-border placeholder:text-inactive-text"
-          />
-        </div>
-        <div className="flex min-w-0 flex-wrap items-center gap-4">
-          <Select
-            value={selectedCatalogueId}
-            onValueChange={(value) => {
-              setSelectedCatalogueId(value);
-              setPage(1);
-            }}
-          >
-            <SelectTrigger className="min-w-0 flex-1">
-              <SelectValue placeholder={t("client.allCatalogues")} />
-            </SelectTrigger>
-            <SelectContent whiteBackground>
-              <SelectItem value="all">{t("client.allCatalogues")}</SelectItem>
-              {categories.map((cat) => (
-                <SelectItem
-                  key={cat.categoryId}
-                  value={cat.categoryId ?? ""}
-                  disabled={!cat.categoryId}
-                >
-                  {lang.startsWith("fr")
-                    ? (cat.titles?.fr ?? cat.titles?.en ?? "")
-                    : (cat.titles?.en ?? cat.titles?.fr ?? "")}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select
-            value={selectedDocumentTypeId}
-            onValueChange={(value) => {
-              setSelectedDocumentTypeId(value);
-              setPage(1);
-            }}
-          >
-            <SelectTrigger className="min-w-0 flex-1">
-              <SelectValue placeholder={t("client.allDocumentTypes")} />
-            </SelectTrigger>
-            <SelectContent whiteBackground>
-              <SelectItem value="all">
-                {t("client.allDocumentTypes")}
-              </SelectItem>
-              {documentTypes.map((type) => (
-                <SelectItem
-                  key={type.id}
-                  value={type.id ?? ""}
-                  disabled={!type.id}
-                >
-                  {lang.startsWith("fr")
-                    ? (type.titles?.fr ?? type.titles?.en ?? "")
-                    : (type.titles?.en ?? type.titles?.fr ?? "")}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select
-            value={selectedDecade ? `${selectedDecade.start}` : "all"}
-            onValueChange={(value) => {
-              if (value === "all") {
-                setSelectedDecade(null);
-              } else {
-                const decade = DECADES.find((d) => String(d.start) === value);
-                if (decade)
-                  setSelectedDecade({ start: decade.start, end: decade.end });
-              }
-              setPage(1);
-            }}
-          >
-            <SelectTrigger className="min-w-0 flex-1">
-              <SelectValue placeholder={t("client.allIssueDates")} />
-            </SelectTrigger>
-            <SelectContent whiteBackground>
-              <SelectItem value="all">{t("client.allIssueDates")}</SelectItem>
-              {DECADES.map((d) => (
-                <SelectItem key={d.start} value={String(d.start)}>
-                  {d.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      {isLoading ? (
-        <p className="text-muted-foreground py-8 text-center">
-          {t("common.loading")}
-        </p>
-      ) : view === "grid" ? (
-        <div className="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {documents.length === 0 ? (
-            <p className="col-span-full text-muted-foreground py-8 text-center">
-              {t("client.noDocuments")}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <h1 className="text-2xl font-semibold text-primary">
+              {t("client.libraryWithCount", { count: totalItems })}
+            </h1>
+            <p className="text-body-text font-normal">
+              {t("client.librarySubtitle")}
             </p>
-          ) : (
-            documents.map((doc, index) => (
-              <DocumentCard key={doc.id || `doc-${index}`} doc={doc} t={t} />
-            ))
-          )}
-        </div>
-      ) : (
-        <div className="min-w-0 overflow-x-auto rounded-lg">
-          <Table className="border-0">
-            <TableHeader className="[&_tr]:border-0">
-              <TableRow className="border-0 bg-surface">
-                <TableHead className="font-bold p-4">
-                  {t("client.reference")}
-                </TableHead>
-                <TableHead className="font-bold p-4">{t("client.title")}</TableHead>
-                <TableHead className="font-bold p-4">{t("client.type")}</TableHead>
-                <TableHead className="font-bold p-4">
-                  {t("client.articles")}
-                </TableHead>
-                <TableHead className="font-bold p-4">
-                  {t("client.issued")}
-                </TableHead>
-                <TableHead className="font-bold items-center justify-end flex p-4">
-                  <MdLanguage className="size-4 text-body-text font-bold" />
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody className="[&_tr]:border-0">
-              {documents.length === 0 ? (
-                <TableRow className="border-0 bg-white">
-                  <TableCell
-                    colSpan={7}
-                    className="text-muted-foreground text-center px-4 py-7"
-                  >
-                    {t("client.noDocuments")}
-                  </TableCell>
-                </TableRow>
-              ) : (
-                documents.map((doc, index) => (
-                  <DocumentTableRow
-                    key={doc.id || `doc-${index}`}
-                    doc={doc}
-                    t={t}
-                    index={index}
-                  />
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      )}
-
-      <div className="flex justify-end [&_[data-slot=pagination-link]]:font-normal">
-        <Pagination className="w-full justify-end">
-          <PaginationContent>
-            <PaginationItem>
-              <PaginationPrevious
-                href="#"
-                onClick={(e) => {
-                  e.preventDefault();
-                  if (page > 1) handlePageChange(page - 1);
-                }}
-                aria-disabled={page <= 1}
-                className={cn(page <= 1 && "pointer-events-none opacity-50")}
-              />
-            </PaginationItem>
-            {getPaginationSlots(page, totalPages, isMobile ? 4 : 7).map((slot, index) =>
-              slot === "ellipsis" ? (
-                <PaginationItem key={`ellipsis-${index}`}>
-                  <span className="px-2">…</span>
-                </PaginationItem>
-              ) : (
-                <PaginationItem key={slot}>
-                  <PaginationLink
-                    href="#"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      handlePageChange(slot);
-                    }}
-                    isActive={page === slot}
-                  >
-                    {slot}
-                  </PaginationLink>
-                </PaginationItem>
-              ),
+          </div>
+          <button
+            type="button"
+            onClick={() => setView(view === "grid" ? "list" : "grid")}
+            className={cn(
+              "flex items-center gap-1.5 rounded-md border border-border px-3 py-2 text-sm font-medium hover:bg-hover",
+              view === "grid" ? "bg-white" : "bg-background",
             )}
-            <PaginationItem>
-              <PaginationNext
-                href="#"
-                onClick={(e) => {
-                  e.preventDefault();
-                  if (page < totalPages) handlePageChange(page + 1);
-                }}
-                aria-disabled={page >= maxAccessiblePage}
-                className={cn(
-                  page >= maxAccessiblePage &&
-                    "pointer-events-none opacity-50",
-                )}
-              />
-            </PaginationItem>
-          </PaginationContent>
-        </Pagination>
-      </div>
+          >
+            {view === "grid" ? (
+              <>
+                <List className="size-4" />
+                {t("client.listView")}
+              </>
+            ) : (
+              <>
+                <LayoutGrid className="size-4" />
+                {t("client.gridView")}
+              </>
+            )}
+          </button>
+        </div>
 
-      <RestrictionModal
-        open={showDocumentsRestriction}
-        onOpenChange={setShowDocumentsRestriction}
-        variant="documents-limit"
-        limit={documentsLimit < 0 ? undefined : documentsLimit}
-        titleLine1={documentsRestrictionCopy.titleLine1}
-        titleLine2={documentsRestrictionCopy.titleLine2}
-        body={documentsRestrictionCopy.body}
-        ctaText={documentsRestrictionCopy.ctaText}
-        imageOverlay={documentsRestrictionCopy.imageOverlay}
-      />
+        <div className="flex min-w-0 flex-col gap-4 sm:justify-between bg-surface p-4 rounded-lg">
+          <div className="relative min-w-0 flex-1 bg-white rounded-lg">
+            <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder={t("client.searchPlaceholder")}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-9 border-border placeholder:text-inactive-text"
+            />
+          </div>
+          <div className="flex min-w-0 flex-wrap items-center gap-4">
+            <Select
+              value={selectedCatalogueId}
+              onValueChange={(value) => {
+                setSelectedCatalogueId(value);
+                setPage(1);
+              }}
+            >
+              <SelectTrigger className="min-w-0 flex-1">
+                <SelectValue placeholder={t("client.allCatalogues")} />
+              </SelectTrigger>
+              <SelectContent whiteBackground>
+                <SelectItem value="all">{t("client.allCatalogues")}</SelectItem>
+                {categories.map((cat) => (
+                  <SelectItem
+                    key={cat.categoryId}
+                    value={cat.categoryId ?? ""}
+                    disabled={!cat.categoryId}
+                  >
+                    {lang.startsWith("fr")
+                      ? (cat.titles?.fr ?? cat.titles?.en ?? "")
+                      : (cat.titles?.en ?? cat.titles?.fr ?? "")}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select
+              value={selectedDocumentTypeId}
+              onValueChange={(value) => {
+                setSelectedDocumentTypeId(value);
+                setPage(1);
+              }}
+            >
+              <SelectTrigger className="min-w-0 flex-1">
+                <SelectValue placeholder={t("client.allDocumentTypes")} />
+              </SelectTrigger>
+              <SelectContent whiteBackground>
+                <SelectItem value="all">
+                  {t("client.allDocumentTypes")}
+                </SelectItem>
+                {documentTypes.map((type) => (
+                  <SelectItem
+                    key={type.id}
+                    value={type.id ?? ""}
+                    disabled={!type.id}
+                  >
+                    {lang.startsWith("fr")
+                      ? (type.titles?.fr ?? type.titles?.en ?? "")
+                      : (type.titles?.en ?? type.titles?.fr ?? "")}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select
+              value={selectedDecade ? `${selectedDecade.start}` : "all"}
+              onValueChange={(value) => {
+                if (value === "all") {
+                  setSelectedDecade(null);
+                } else {
+                  const decade = DECADES.find((d) => String(d.start) === value);
+                  if (decade)
+                    setSelectedDecade({ start: decade.start, end: decade.end });
+                }
+                setPage(1);
+              }}
+            >
+              <SelectTrigger className="min-w-0 flex-1">
+                <SelectValue placeholder={t("client.allIssueDates")} />
+              </SelectTrigger>
+              <SelectContent whiteBackground>
+                <SelectItem value="all">{t("client.allIssueDates")}</SelectItem>
+                {DECADES.map((d) => (
+                  <SelectItem key={d.start} value={String(d.start)}>
+                    {d.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        {isLoading ? (
+          <p className="text-muted-foreground py-8 text-center">
+            {t("common.loading")}
+          </p>
+        ) : view === "grid" ? (
+          <div className="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {documents.length === 0 ? (
+              <p className="col-span-full text-muted-foreground py-8 text-center">
+                {t("client.noDocuments")}
+              </p>
+            ) : (
+              documents.map((doc, index) => (
+                <DocumentCard key={doc.id || `doc-${index}`} doc={doc} t={t} />
+              ))
+            )}
+          </div>
+        ) : (
+          <div className="min-w-0 overflow-x-auto rounded-lg">
+            <Table className="border-0">
+              <TableHeader className="[&_tr]:border-0">
+                <TableRow className="border-0 bg-surface">
+                  <TableHead className="font-bold p-4">
+                    {t("client.reference")}
+                  </TableHead>
+                  <TableHead className="font-bold p-4">
+                    {t("client.title")}
+                  </TableHead>
+                  <TableHead className="font-bold p-4">
+                    {t("client.type")}
+                  </TableHead>
+                  <TableHead className="font-bold p-4">
+                    {t("client.articles")}
+                  </TableHead>
+                  <TableHead className="font-bold p-4">
+                    {t("client.issued")}
+                  </TableHead>
+                  <TableHead className="font-bold items-center justify-end flex p-4">
+                    <MdLanguage className="size-4 text-body-text font-bold" />
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody className="[&_tr]:border-0">
+                {documents.length === 0 ? (
+                  <TableRow className="border-0 bg-white">
+                    <TableCell
+                      colSpan={7}
+                      className="text-muted-foreground text-center px-4 py-7"
+                    >
+                      {t("client.noDocuments")}
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  documents.map((doc, index) => (
+                    <DocumentTableRow
+                      key={doc.id || `doc-${index}`}
+                      doc={doc}
+                      t={t}
+                      index={index}
+                    />
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+
+        <div className="flex justify-end **:data-[slot=pagination-link]:font-normal">
+          <Pagination className="w-full justify-end">
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious
+                  href="#"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    if (page > 1) handlePageChange(page - 1);
+                  }}
+                  aria-disabled={page <= 1}
+                  className={cn(page <= 1 && "pointer-events-none opacity-50")}
+                />
+              </PaginationItem>
+              {getPaginationSlots(page, totalPages, isMobile ? 4 : 7).map(
+                (slot, index) =>
+                  slot === "ellipsis" ? (
+                    <PaginationItem key={`ellipsis-${index}`}>
+                      <span className="px-2">…</span>
+                    </PaginationItem>
+                  ) : (
+                    <PaginationItem key={slot}>
+                      <PaginationLink
+                        href="#"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          handlePageChange(slot);
+                        }}
+                        isActive={page === slot}
+                      >
+                        {slot}
+                      </PaginationLink>
+                    </PaginationItem>
+                  ),
+              )}
+              <PaginationItem>
+                <PaginationNext
+                  href="#"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    if (page < totalPages) handlePageChange(page + 1);
+                  }}
+                  aria-disabled={page >= maxAccessiblePage}
+                  className={cn(
+                    page >= maxAccessiblePage &&
+                      "pointer-events-none opacity-50",
+                  )}
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
+        </div>
+
+        <RestrictionModal
+          open={showDocumentsRestriction}
+          onOpenChange={setShowDocumentsRestriction}
+          variant="documents-limit"
+          limit={documentsLimit < 0 ? undefined : documentsLimit}
+          titleLine1={documentsRestrictionCopy.titleLine1}
+          titleLine2={documentsRestrictionCopy.titleLine2}
+          body={documentsRestrictionCopy.body}
+          ctaText={documentsRestrictionCopy.ctaText}
+          imageOverlay={documentsRestrictionCopy.imageOverlay}
+          onUpgrade={() => router.push(path("/subscription"))}
+        />
       </div>
     </div>
   );

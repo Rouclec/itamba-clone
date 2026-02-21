@@ -1,13 +1,17 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
+import { useLocalePath } from '@/lib/use-locale'
 import { useT } from '@/app/i18n/client'
 import { RestrictionModal, getRestrictionCopy } from '@/components/restriction-modal'
 import { GUEST_FIRST_LOGIN_MODAL_SEEN_KEY } from '@/utils/auth/session'
 import { getRoleSlug } from '@/utils/auth/role'
 
 export function GuestFirstLoginModal() {
+  const router = useRouter()
+  const path = useLocalePath()
   const { user, currentUser, hydrated } = useAuth()
   const { t } = useT('translation')
   const [open, setOpen] = useState(false)
@@ -51,7 +55,7 @@ export function GuestFirstLoginModal() {
       ctaText={copy.ctaText}
       imageOverlay={copy.imageOverlay}
       onUpgrade={() => {
-        // Could navigate to upgrade/pricing page
+        router.push(path('/subscription'))
       }}
       imageSrc="/assets/free-limited-bg.png"
     />

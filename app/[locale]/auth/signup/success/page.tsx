@@ -10,6 +10,7 @@ import { useT } from "@/app/i18n/client";
 import Image from "next/image";
 import { isAdminRole, DEFAULT_USER_ROLE } from "@/utils/auth/role";
 import type { v2UserRole, v2AdminRole } from "@/@hey_api/users.swagger";
+import { getPendingSubscriptionReturn, clearPendingSubscriptionReturn } from "@/utils/auth/session";
 
 export default function SuccessPage() {
   const router = useRouter();
@@ -21,6 +22,16 @@ export default function SuccessPage() {
   useEffect(() => {
     if (currentUser) setSignupRequest(null);
   }, [currentUser, setSignupRequest]);
+
+  // If user came from subscription payment page, send them back there after signup
+  useEffect(() => {
+    if (!currentUser) return;
+    const pendingReturn = getPendingSubscriptionReturn();
+    if (pendingReturn) {
+      clearPendingSubscriptionReturn();
+      router.replace(pendingReturn);
+    }
+  }, [currentUser, router]);
 
   const handleStartBrowsing = () => {
     const role = (currentUser?.userRole ?? DEFAULT_USER_ROLE) as

@@ -55,6 +55,28 @@ export const CURRENT_USER_STORAGE_KEY = "itamba-current-user";
 /** Guest "first login" modal dismissed this session; cleared on sign out so modal shows again after next login. */
 export const GUEST_FIRST_LOGIN_MODAL_SEEN_KEY = "itamba_guest_first_login_modal_seen";
 
+/** After signup/signin, redirect here if set (e.g. subscription payment URL from website). Cleared after redirect. */
+export const PENDING_SUBSCRIPTION_RETURN_KEY = "itamba_pending_subscription_return";
+
+export function getPendingSubscriptionReturn(): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const v = localStorage.getItem(PENDING_SUBSCRIPTION_RETURN_KEY);
+    return v?.trim() || null;
+  } catch {
+    return null;
+  }
+}
+
+export function clearPendingSubscriptionReturn(): void {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.removeItem(PENDING_SUBSCRIPTION_RETURN_KEY);
+  } catch {
+    // ignore
+  }
+}
+
 const COOKIE_EXPIRY_DATE_MS = 10 * 24 * 60 * 60 * 1000;
 
 /**
@@ -111,6 +133,7 @@ export function clearSession() {
     localStorage.removeItem(USER_ID_STORAGE_KEY);
     localStorage.removeItem(CURRENT_USER_STORAGE_KEY);
     localStorage.removeItem(GUEST_FIRST_LOGIN_MODAL_SEEN_KEY);
+    localStorage.removeItem(PENDING_SUBSCRIPTION_RETURN_KEY);
   }
 }
 

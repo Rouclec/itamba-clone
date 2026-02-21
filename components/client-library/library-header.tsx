@@ -16,18 +16,30 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import i18next from '@/app/i18n/i18next'
+import { getRoleSlug } from '@/utils/auth/role'
 
 function avatarLabel(currentUser: { fullName?: string; email?: string; telephone?: string } | null) {
   const s = currentUser?.fullName ?? currentUser?.email ?? currentUser?.telephone ?? ''
   return s.slice(0, 2).toUpperCase() || 'U'
 }
 
+/** Translation key for client role (guest, student, professional, organization). Falls back to freePlan for unknown. */
+function getClientRoleLabelKey(role: string | undefined | null): string {
+  const slug = getRoleSlug(role)
+  if (slug === 'guest') return 'client.roleGuest'
+  if (slug === 'student') return 'client.roleStudent'
+  if (slug === 'professional') return 'client.roleProfessional'
+  if (slug === 'organization') return 'client.roleOrganization'
+  return 'client.freePlan'
+}
+
 export function LibraryHeader() {
-  const { currentUser, signOut } = useAuth()
+  const { currentUser, user, signOut } = useAuth()
   const { t, i18n } = useT('translation')
   const router = useRouter()
   const pathname = usePathname()
   const locale = i18n.language ?? 'en'
+  const roleLabelKey = getClientRoleLabelKey(currentUser?.userRole ?? user?.role ?? undefined)
 
   function switchLocale() {
     const newLocale = locale === 'en' ? 'fr' : 'en'
@@ -65,7 +77,7 @@ export function LibraryHeader() {
                 {currentUser?.fullName ?? currentUser?.email ?? currentUser?.telephone ?? '—'}
                 <MdVerified className="size-4 shrink-0 text-tertiary" />
               </div>
-              <div className="text-xs text-tertiary font-medium">{t('client.freePlan')}</div>
+              <div className="text-xs text-tertiary font-medium">{t(roleLabelKey)}</div>
             </div>
             <MdKeyboardArrowDown className="size-4 shrink-0 text-muted-foreground" />
           </button>
@@ -85,7 +97,7 @@ export function LibraryHeader() {
                 <p className="font-semibold truncate">{currentUser?.fullName ?? '—'}</p>
                 <p className="text-sm text-muted-foreground truncate">{currentUser?.email ?? currentUser?.telephone ?? '—'}</p>
                 <span className="inline-flex items-center rounded-md bg-surface px-1.5 py-0.5 text-xs font-medium">
-                  {t('client.freePlan')}
+                  {t(roleLabelKey)}
                 </span>
               </div>
             </div>
@@ -124,9 +136,11 @@ export function LibraryHeader() {
               <LogOut className="size-4 text-red-500" />
               {t('client.logOut')}
             </DropdownMenuItem>
-            <Button className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
-              {t('client.upgradeForUnlimited')}
-            </Button>
+            <LocaleLink href="/subscription">
+              <Button className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
+                {t('client.upgradeForUnlimited')}
+              </Button>
+            </LocaleLink>
           </div>
         </DropdownMenuContent>
       </DropdownMenu>

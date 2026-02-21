@@ -189,6 +189,9 @@ function CatalogueTableRow({
 }
 
 export function CataloguesPageContent() {
+  const router = useRouter()
+  const path = useLocalePath()
+
   const { t } = useT("translation");
   const { currentUser, user } = useAuth();
   const role = currentUser?.userRole ?? user?.role ?? undefined;
@@ -448,6 +451,7 @@ export function CataloguesPageContent() {
           body={cataloguesRestrictionCopy.body}
           ctaText={cataloguesRestrictionCopy.ctaText}
           imageOverlay={cataloguesRestrictionCopy.imageOverlay}
+          onUpgrade={() => router.push(path("/subscription"))}
         />
       </div>
     </div>

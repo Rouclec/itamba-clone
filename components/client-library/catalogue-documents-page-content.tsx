@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Search, LayoutGrid, List, ArrowLeft } from "lucide-react";
 import { MdLanguage } from "react-icons/md";
 import { useT } from "@/app/i18n/client";
@@ -84,6 +85,7 @@ export function CatalogueDocumentsPageContent({
   catalogueId: string;
 }) {
   const { t } = useT("translation");
+  const router = useRouter();
   const path = useLocalePath();
   const locale = useLocale();
   const { currentUser, user } = useAuth();
@@ -382,6 +384,7 @@ export function CatalogueDocumentsPageContent({
           body={documentsRestrictionCopy.body}
           ctaText={documentsRestrictionCopy.ctaText}
           imageOverlay={documentsRestrictionCopy.imageOverlay}
+          onUpgrade={() => router.push(path("/subscription"))}
         />
       </div>
     </div>

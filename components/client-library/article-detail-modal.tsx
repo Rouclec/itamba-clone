@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useLocalePath } from "@/lib/use-locale";
 import {
   Dialog,
   DialogContent,
@@ -81,6 +83,8 @@ export function ArticleDetailModal({
   document: doc,
 }: ArticleDetailModalProps) {
   const { t } = useT("translation");
+  const router = useRouter();
+  const path = useLocalePath();
   const { userId, user, currentUser } = useAuth();
   const role = currentUser?.userRole ?? user?.role;
   const { bookmarksExceeded, bookmarksLimit, notesExceeded, notesLimit } =
@@ -448,6 +452,7 @@ export function ArticleDetailModal({
         body={bookmarkRestrictionCopy.body}
         ctaText={bookmarkRestrictionCopy.ctaText}
         imageOverlay={bookmarkRestrictionCopy.imageOverlay}
+        onUpgrade={() => router.push(path("/subscription"))}
       />
       <RestrictionModal
         open={showNotesRestriction}
@@ -459,6 +464,7 @@ export function ArticleDetailModal({
         body={notesRestrictionCopy.body}
         ctaText={notesRestrictionCopy.ctaText}
         imageOverlay={notesRestrictionCopy.imageOverlay}
+        onUpgrade={() => router.push(path("/subscription"))}
       />
 
       <AlertDialog

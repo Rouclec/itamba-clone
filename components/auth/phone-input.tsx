@@ -104,7 +104,7 @@ export function PhoneInput({
             onClick={() => !disabled && setIsOpen(!isOpen)}
             type="button"
             disabled={disabled}
-            className="px-3 py-0 h-full flex items-center gap-2 rounded-l-lg hover:bg-(--hover) min-w-28 shrink-0 disabled:pointer-events-none"
+            className="px-3 py-0 h-full flex items-center gap-2 rounded-l-lg hover:bg-hover min-w-28 shrink-0 disabled:pointer-events-none"
             aria-haspopup="listbox"
             aria-expanded={isOpen}
             aria-label="Select country"
@@ -162,7 +162,7 @@ export function PhoneInput({
           required={required}
           disabled={disabled}
           maxLength={15}
-          className="flex-1 min-w-0 h-full px-4 py-0 bg-transparent outline-none text-foreground placeholder:text-muted-foreground"
+          className="flex-1 min-w-0 h-full px-4 py-0 bg-transparent outline-none text-foreground placeholder:text-inactive-text placeholder:font-normal"
         />
       </div>
 
