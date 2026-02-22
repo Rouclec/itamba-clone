@@ -41,6 +41,7 @@ import {
 } from '@/@hey_api/documentsmaterials.swagger/@tanstack/react-query.gen'
 import { useCreateDocument, useUpdateDocument, buildDocumentBody } from '@/hooks/use-create-document'
 import type { DocumentDetails } from '@/lib/document-details-types'
+import { getAxiosErrorMessage } from '@/utils/axios-error'
 
 export interface NewDocumentModalProps {
   open: boolean
@@ -325,16 +326,22 @@ export function NewDocumentModal({
         { id: editDocumentId, payload },
         {
           onSuccess,
-          onError: () => {
-            setErrors({ form: t('admin.newDocument.updateError') })
+          onError: (err) => {
+            const msg = getAxiosErrorMessage(err)
+            setErrors({
+              form: msg?.trim() ? msg : t('admin.newDocument.updateError'),
+            })
           },
         }
       )
     } else {
       createDocument.mutate(payload, {
         onSuccess,
-        onError: () => {
-          setErrors({ form: t('admin.newDocument.createError') })
+        onError: (err) => {
+          const msg = getAxiosErrorMessage(err)
+          setErrors({
+            form: msg?.trim() ? msg : t('admin.newDocument.createError'),
+          })
         },
       })
     }

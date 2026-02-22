@@ -33,8 +33,16 @@ export function AdminSidebarContent() {
   const closeSidebarOnNav = () => {
     if (isMobile) setSidebarOpen(false)
   }
+  const normalizedPath = pathname.replace(/\/$/, '')
   const libraryActive =
-    pathname !== '' && pathname.replace(/\/$/, '').endsWith('/admin')
+    pathname !== '' &&
+    (normalizedPath.endsWith('/admin') ||
+      pathname.includes('/admin/documents') ||
+      pathname.includes('/admin/types') ||
+      pathname.includes('/admin/catalogues'))
+  const typesActive = pathname !== '' && pathname.includes('/admin/types')
+  const cataloguesActive = pathname !== '' && pathname.includes('/admin/catalogues')
+  const usersActive = pathname !== '' && pathname.includes('/admin/users')
   const [openSections, setOpenSections] = useState<Record<SectionKey, boolean>>({
     library: true,
     activities: true,
@@ -104,37 +112,45 @@ export function AdminSidebarContent() {
                 href="/admin"
                 className={cn(
                   navChildClass,
-                  libraryActive ? navChildActiveClass : navChildInactiveClass
+                  libraryActive && !typesActive && !cataloguesActive
+                    ? navChildActiveClass
+                    : navChildInactiveClass
                 )}
                 onClick={closeSidebarOnNav}
               >
                 <MdOutlineTextSnippet className="size-4" />
                 {t('admin.sidebar.documents')}
               </LocaleLink>
-              <Link
-                href="#"
-                className={cn(navChildClass, navChildInactiveClass)}
+              <LocaleLink
+                href="/admin/catalogues"
+                className={cn(
+                  navChildClass,
+                  cataloguesActive ? navChildActiveClass : navChildInactiveClass
+                )}
                 onClick={closeSidebarOnNav}
               >
                 <MdOutlineCategory className="size-4" />
                 {t('admin.sidebar.catalogues')}
-              </Link>
-              <Link
-                href="#"
-                className={cn(navChildClass, navChildInactiveClass)}
+              </LocaleLink>
+              <LocaleLink
+                href="/admin/types"
+                className={cn(
+                  navChildClass,
+                  typesActive ? navChildActiveClass : navChildInactiveClass
+                )}
                 onClick={closeSidebarOnNav}
               >
                 <MdOutlineWidgets className="size-4" />
                 {t('admin.sidebar.types')}
-              </Link>
-              <Link
+              </LocaleLink>
+              {/* <Link
                 href="#"
                 className={cn(navChildClass, navChildInactiveClass)}
                 onClick={closeSidebarOnNav}
               >
                 <MdOutlineReceiptLong className="size-4" />
                 {t('admin.sidebar.collections')}
-              </Link>
+              </Link> */}
             </div>
           )}
         </div>
@@ -145,18 +161,25 @@ export function AdminSidebarContent() {
           {t('admin.sidebar.manageActivities')}
         </p>
         <div className="flex flex-col gap-0.5">
-          <Link href="#" className={cn(navSiblingClass)} onClick={closeSidebarOnNav}>
+          <LocaleLink
+            href="/admin/users"
+            className={cn(
+              navSiblingClass,
+              usersActive ? 'bg-surface text-primary' : ''
+            )}
+            onClick={closeSidebarOnNav}
+          >
             <MdPeopleOutline className="size-4" />
             {t('admin.sidebar.adminUsers')}
-          </Link>
+          </LocaleLink>
           <Link href="#" className={cn(navSiblingClass)} onClick={closeSidebarOnNav}>
             <MdOutlineSubscriptions className="size-4" />
             {t('admin.sidebar.userSubscriptions')}
           </Link>
-          <Link href="#" className={cn(navSiblingClass)} onClick={closeSidebarOnNav}>
+          {/* <Link href="#" className={cn(navSiblingClass)} onClick={closeSidebarOnNav}>
             <MdOutlineHistory className="size-4" />
             {t('admin.sidebar.adminActivities')}
-          </Link>
+          </Link> */}
         </div>
       </div>
 

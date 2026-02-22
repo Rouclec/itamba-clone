@@ -27,7 +27,7 @@ import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { useLocale } from "@/lib/use-locale";
 import { formatDocumentDate } from "@/utils/date";
-import { useMemo, useRef, useCallback, useState } from "react";
+import { useMemo, useRef, useCallback, useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 
 const ARTICLE_ID_PREFIX = "article-";
@@ -213,6 +213,8 @@ export interface DocumentPreviewModalProps {
   documentLoading?: boolean;
   /** Resolve type id to display label (only when using data) */
   getTypeLabel?: (typeId: string) => string;
+  /** When set and modal opens with document, scroll the content to this material id (e.g. from materials table View). */
+  scrollToMaterialId?: string | null;
 }
 
 function getDocTypeLabel(
@@ -231,6 +233,7 @@ export function DocumentPreviewModal({
   document: doc = null,
   documentLoading = false,
   getTypeLabel,
+  scrollToMaterialId = null,
 }: DocumentPreviewModalProps) {
   const { t } = useT("translation");
   const locale = useLocale();
@@ -281,6 +284,17 @@ export function DocumentPreviewModal({
       container.scrollTop + (elRect.top - containerRect.top);
     container.scrollTo({ top: Math.max(0, scrollTop - 8), behavior: "smooth" });
   }, []);
+
+  useEffect(() => {
+    if (!open || !doc || !scrollToMaterialId || flat.length === 0) return;
+    const flatIndex = flat.findIndex((item) => item.id === scrollToMaterialId);
+    if (flatIndex === -1) return;
+    const rafId = requestAnimationFrame(() => {
+      requestAnimationFrame(() => scrollToArticle(flatIndex));
+    });
+    return () => cancelAnimationFrame(rafId);
+  }, [open, doc, scrollToMaterialId, flat, scrollToArticle]);
+
   const [closedTocPaths, setClosedTocPaths] = useState<Set<string>>(
     () => new Set(),
   );

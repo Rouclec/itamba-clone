@@ -15,13 +15,20 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { RichTextEditorBlock } from '@/components/client-library/note-editor'
 import { useCreateMaterial, useUpdateMaterial, useGetMaterial } from '@/hooks/use-materials'
-import type { MaterialType, MaterialTypeKind } from '@/types/material/type.material'
+import type {
+  MaterialPayload,
+  MaterialTypeKind,
+} from '@/types/material/type.material'
+import { getAxiosErrorMessage } from '@/utils/axios-error'
 
 export interface NewMaterialModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  /** When adding from document row: document id (for API) and ref (for parent display). */
+  /** Document this material belongs to. */
   documentId?: string | null
+  /** Parent material or document id (required for create: root = document id, or another material's id). */
+  parentId?: string | null
+  /** Label for the parent field (e.g. document ref or division ref). */
   parentRef?: string
   /** Edit mode: pre-fill and PATCH on submit */
   editMaterialId?: string | null
@@ -32,6 +39,7 @@ export function NewMaterialModal({
   open,
   onOpenChange,
   documentId = null,
+  parentId = null,
   parentRef = '',
   editMaterialId = null,
   onSubmit,
@@ -65,22 +73,20 @@ export function NewMaterialModal({
       return
     }
     if (!editMaterial) return
+    const raw = editMaterial as Record<string, unknown>
+    const typeVal = (raw.material_type ?? raw.materialType) as string | undefined
     const kind =
-      (editMaterial.materialType === 'division' || editMaterial.materialType === 'article'
-        ? editMaterial.materialType
-        : 'article') as MaterialTypeKind
-    setMaterialType(kind)
-    setTitle(editMaterial.title ?? '')
-    setReference(editMaterial.ref ?? '')
+      typeVal === 'division' || typeVal === 'article' ? typeVal : 'article'
+    setMaterialType(kind as MaterialTypeKind)
+    setTitle((raw.title as string) ?? '')
+    setReference((raw.ref as string) ?? '')
+    const bodyRaw = (raw.json_body ?? raw.jsonBody) as string | undefined
     setBodyJson(
-      editMaterial.jsonBody?.trim() && editMaterial.jsonBody !== '{}'
-        ? editMaterial.jsonBody
-        : ''
+      bodyRaw?.trim() && bodyRaw !== '{}' ? bodyRaw : ''
     )
+    const labelsArr = raw.labels as string[] | undefined
     setLabel(
-      Array.isArray(editMaterial.labels) && editMaterial.labels.length > 0
-        ? editMaterial.labels[0]
-        : ''
+      Array.isArray(labelsArr) && labelsArr.length > 0 ? labelsArr[0] : ''
     )
     setErrors({})
   }, [open, isEditMode, editMaterial])
@@ -106,24 +112,19 @@ export function NewMaterialModal({
     }
     setErrors({})
 
-    const payload: {
-      ref: string
-      materialType: MaterialTypeKind
-      documentId?: string
-      parentId?: string
-      title?: string
-      jsonBody?: string
-      labels?: string[]
-    } = {
+    const payload: MaterialPayload = {
       ref: reference.trim(),
-      materialType,
+      material_type: materialType,
+      json_body:
+        materialType === 'article' && bodyJson?.trim() && bodyJson !== '{}'
+          ? bodyJson
+          : '{}',
+      status: 'inProgress',
+      labels: materialType === 'article' && label.trim() ? [label.trim()] : [],
     }
-    if (documentId) payload.documentId = documentId
+    if (documentId) payload.document_id = documentId
+    if (parentId) payload.parent_id = parentId
     if (materialType === 'division') payload.title = title.trim()
-    if (materialType === 'article') {
-      payload.jsonBody = bodyJson?.trim() && bodyJson !== '{}' ? bodyJson : undefined
-      payload.labels = label.trim() ? [label.trim()] : undefined
-    }
 
     const onSuccess = () => {
       onOpenChange(false)
@@ -139,15 +140,23 @@ export function NewMaterialModal({
         { id: editMaterialId, payload },
         {
           onSuccess,
-          onError: () =>
-            setErrors({ form: t('admin.newMaterial.updateError') }),
+          onError: (err) => {
+            const msg = getAxiosErrorMessage(err)
+            setErrors({
+              form: msg?.trim() ? msg : t('admin.newMaterial.updateError'),
+            })
+          },
         }
       )
     } else {
       createMaterial.mutate(payload, {
         onSuccess,
-        onError: () =>
-          setErrors({ form: t('admin.newMaterial.createError') }),
+        onError: (err) => {
+          const msg = getAxiosErrorMessage(err)
+          setErrors({
+            form: msg?.trim() ? msg : t('admin.newMaterial.createError'),
+          })
+        },
       })
     }
   }

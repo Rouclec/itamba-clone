@@ -1,51 +1,62 @@
-'use client'
+"use client";
 
-import { useRouter, usePathname } from 'next/navigation'
-import { Check, Settings, LogOut, ChevronRight, UserPen } from 'lucide-react'
-import { MdLanguage, MdKeyboardArrowDown, MdVerified } from 'react-icons/md'
-import { useAuth } from '@/lib/auth-context'
-import { useT } from '@/app/i18n/client'
-import { LocaleLink } from '@/components/locale-link'
-import { SidebarTrigger } from './client-library-layout'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { Button } from '@/components/ui/button'
+import { useRouter, usePathname } from "next/navigation";
+import { Check, Settings, LogOut, ChevronRight, UserPen } from "lucide-react";
+import { MdLanguage, MdKeyboardArrowDown, MdVerified } from "react-icons/md";
+import { useAuth } from "@/lib/auth-context";
+import { useT } from "@/app/i18n/client";
+import { LocaleLink } from "@/components/locale-link";
+import { SidebarTrigger } from "./client-library-layout";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import i18next from '@/app/i18n/i18next'
-import { getRoleSlug } from '@/utils/auth/role'
+} from "@/components/ui/dropdown-menu";
+import i18next from "@/app/i18n/i18next";
+import {
+  getRoleSlug,
+  isAdminRole,
+  getAdminRoleDisplayLabel,
+} from "@/utils/auth/role";
 
-function avatarLabel(currentUser: { fullName?: string; email?: string; telephone?: string } | null) {
-  const s = currentUser?.fullName ?? currentUser?.email ?? currentUser?.telephone ?? ''
-  return s.slice(0, 2).toUpperCase() || 'U'
+function avatarLabel(
+  currentUser: { fullName?: string; email?: string; telephone?: string } | null,
+) {
+  const s =
+    currentUser?.fullName ?? currentUser?.email ?? currentUser?.telephone ?? "";
+  return s.slice(0, 2).toUpperCase() || "U";
 }
 
 /** Translation key for client role (guest, student, professional, organization). Falls back to freePlan for unknown. */
 function getClientRoleLabelKey(role: string | undefined | null): string {
-  const slug = getRoleSlug(role)
-  if (slug === 'guest') return 'client.roleGuest'
-  if (slug === 'student') return 'client.roleStudent'
-  if (slug === 'professional') return 'client.roleProfessional'
-  if (slug === 'organization') return 'client.roleOrganization'
-  return 'client.freePlan'
+  const slug = getRoleSlug(role);
+  if (slug === "guest") return "client.roleGuest";
+  if (slug === "student") return "client.roleStudent";
+  if (slug === "professional") return "client.roleProfessional";
+  if (slug === "organization") return "client.roleOrganization";
+  return "client.freePlan";
 }
 
 export function LibraryHeader() {
-  const { currentUser, user, signOut } = useAuth()
-  const { t, i18n } = useT('translation')
-  const router = useRouter()
-  const pathname = usePathname()
-  const locale = i18n.language ?? 'en'
-  const roleLabelKey = getClientRoleLabelKey(currentUser?.userRole ?? user?.role ?? undefined)
+  const { currentUser, user, signOut } = useAuth();
+  const { t, i18n } = useT("translation");
+  const router = useRouter();
+  const pathname = usePathname();
+  const locale = i18n.language ?? "en";
+  const role = currentUser?.userRole ?? user?.role ?? undefined;
+  const roleDisplayText = isAdminRole(role)
+    ? getAdminRoleDisplayLabel(role)
+    : t(getClientRoleLabelKey(role));
+  const isAdmin = isAdminRole(role);
 
   function switchLocale() {
-    const newLocale = locale === 'en' ? 'fr' : 'en'
-    const newPath = pathname.replace(/^\/[a-z]{2}/, `/${newLocale}`)
-    i18next.changeLanguage(newLocale)
-    router.push(newPath)
+    const newLocale = locale === "en" ? "fr" : "en";
+    const newPath = pathname.replace(/^\/[a-z]{2}/, `/${newLocale}`);
+    i18next.changeLanguage(newLocale);
+    router.push(newPath);
   }
 
   return (
@@ -56,10 +67,10 @@ export function LibraryHeader() {
         type="button"
         onClick={switchLocale}
         className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm text-[#64748B] hover:bg-hover hover:text-foreground uppercase"
-        aria-label={locale === 'fr' ? 'Switch to English' : 'Switch to French'}
+        aria-label={locale === "fr" ? "Switch to English" : "Switch to French"}
       >
         <MdLanguage className="size-4" />
-        <span>{locale === 'fr' ? 'FR' : 'EN'}</span>
+        <span>{locale === "fr" ? "FR" : "EN"}</span>
       </button>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
@@ -74,10 +85,15 @@ export function LibraryHeader() {
             </Avatar>
             <div className="hidden text-left min-w-0 md:block">
               <div className="flex items-center gap-1 text-sm font-medium truncate">
-                {currentUser?.fullName ?? currentUser?.email ?? currentUser?.telephone ?? '—'}
+                {currentUser?.fullName ??
+                  currentUser?.email ??
+                  currentUser?.telephone ??
+                  "—"}
                 <MdVerified className="size-4 shrink-0 text-tertiary" />
               </div>
-              <div className="text-xs text-tertiary font-medium">{t(roleLabelKey)}</div>
+              <div className="text-xs text-tertiary font-medium">
+                {roleDisplayText}
+              </div>
             </div>
             <MdKeyboardArrowDown className="size-4 shrink-0 text-muted-foreground" />
           </button>
@@ -94,21 +110,25 @@ export function LibraryHeader() {
                 </AvatarFallback>
               </Avatar>
               <div className="min-w-0 flex-1">
-                <p className="font-semibold truncate">{currentUser?.fullName ?? '—'}</p>
-                <p className="text-sm text-muted-foreground truncate">{currentUser?.email ?? currentUser?.telephone ?? '—'}</p>
+                <p className="font-semibold truncate">
+                  {currentUser?.fullName ?? "—"}
+                </p>
+                <p className="text-sm text-muted-foreground truncate">
+                  {currentUser?.email ?? currentUser?.telephone ?? "—"}
+                </p>
                 <span className="inline-flex items-center rounded-md bg-surface px-1.5 py-0.5 text-xs font-medium">
-                  {t(roleLabelKey)}
+                  {roleDisplayText}
                 </span>
               </div>
             </div>
             <button
               type="button"
               onClick={() => {
-                switchLocale()
+                switchLocale();
               }}
               className="flex w-full items-center justify-between rounded-md px-2 py-1.5 text-sm text-muted-foreground hover:bg-hover hover:text-foreground"
             >
-              <span>{locale === 'fr' ? 'Français' : 'English'}</span>
+              <span>{locale === "fr" ? "Français" : "English"}</span>
               <ChevronRight className="size-4" />
             </button>
             <DropdownMenuItem asChild>
@@ -117,7 +137,7 @@ export function LibraryHeader() {
                 className="flex cursor-pointer items-center gap-2 focus:bg-surface focus:text-foreground data-highlighted:bg-surface data-highlighted:text-foreground"
               >
                 <Settings className="size-4 text-body-text" />
-                {t('client.settings')}
+                {t("client.settings")}
               </LocaleLink>
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
@@ -126,7 +146,7 @@ export function LibraryHeader() {
                 className="flex cursor-pointer items-center gap-2 focus:bg-surface focus:text-foreground data-highlighted:bg-surface data-highlighted:text-foreground"
               >
                 <UserPen className="size-4 text-body-text" />
-                {t('auth.completeProfile')}
+                {t("auth.completeProfile")}
               </LocaleLink>
             </DropdownMenuItem>
             <DropdownMenuItem
@@ -134,16 +154,18 @@ export function LibraryHeader() {
               className="cursor-pointer text-red-600 focus:bg-surface focus:text-foreground data-highlighted:bg-surface data-highlighted:text-foreground"
             >
               <LogOut className="size-4 text-red-500" />
-              {t('client.logOut')}
+              {t("client.logOut")}
             </DropdownMenuItem>
-            <LocaleLink href="/subscription">
-              <Button className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
-                {t('client.upgradeForUnlimited')}
-              </Button>
-            </LocaleLink>
+            {!isAdmin && (
+              <LocaleLink href="/subscription">
+                <Button className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
+                  {t("client.upgradeForUnlimited")}
+                </Button>
+              </LocaleLink>
+            )}
           </div>
         </DropdownMenuContent>
       </DropdownMenu>
     </header>
-  )
+  );
 }

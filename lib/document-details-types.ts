@@ -37,7 +37,11 @@ export interface DocumentDetailsOwnerNote {
 export interface DocumentDetails {
   id?: string;
   document_number?: string;
+  documentNumber?: string;
   ref: string;
+  /** ID of the root material for this document (API: root_material_id / rootMaterialId). Used as parent_id when reordering top-level materials. */
+  root_material_id?: string;
+  rootMaterialId?: string;
   title: string;
   /** ProseMirror/TipTap JSON (stringified). Preferred over header when present. */
   json_header?: string;
