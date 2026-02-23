@@ -118,6 +118,7 @@ export default function CareerPage() {
         {/* Continue Button */}
         <button
           type="submit"
+          data-testid="signup-career-submit"
           disabled={!selectedRole || isLoading}
           className={`w-full h-11 rounded-lg font-semibold text-white transition-all flex items-center justify-center gap-2 ${
             !selectedRole || isLoading

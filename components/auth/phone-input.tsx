@@ -16,6 +16,8 @@ interface PhoneInputProps {
   disabled?: boolean;
   /** Initial country (e.g. from signupRequest.phoneNumber). If not set, uses defaultCountry (Cameroon). */
   defaultCountryCode?: string;
+  /** For E2E tests */
+  'data-testid'?: string;
 }
 
 export function PhoneInput({
@@ -28,6 +30,7 @@ export function PhoneInput({
   required = false,
   disabled = false,
   defaultCountryCode,
+  'data-testid': dataTestId,
 }: PhoneInputProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedCountry, setSelectedCountry] = useState<Country>(() => {
@@ -172,6 +175,7 @@ export function PhoneInput({
           required={required}
           disabled={disabled}
           maxLength={15}
+          data-testid={dataTestId}
           className="flex-1 min-w-0 h-full px-4 py-0 bg-transparent outline-none text-foreground placeholder:text-inactive-text placeholder:font-normal"
         />
       </div>

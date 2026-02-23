@@ -192,6 +192,7 @@ export default function SubscriptionPlansPage() {
                   ? "bg-white text-primary shadow-sm"
                   : "text-primary bg-transparent"
               }`}
+              data-testid="subscription-toggle-monthly"
             >
               {t("subscription.payMonthly")}
             </button>
@@ -203,6 +204,7 @@ export default function SubscriptionPlansPage() {
                   ? "bg-white text-primary shadow-sm"
                   : "text-primary bg-transparent"
               }`}
+              data-testid="subscription-toggle-yearly"
             >
               {t("subscription.payYearly")}
             </button>
@@ -231,6 +233,7 @@ export default function SubscriptionPlansPage() {
                     ? "border-primary md:-translate-y-6"
                     : "border-border"
                 }`}
+                data-testid={`subscription-plan-${plan.tier === "SUBSCRIPTION_TIER_TYPE_PROFESSIONAL" ? "professional" : plan.tier === "SUBSCRIPTION_TIER_TYPE_STUDENT" ? "student" : "organization"}`}
               >
                 <CardHeader className="p-0">
                   <div className="flex justify-between">
@@ -287,6 +290,7 @@ export default function SubscriptionPlansPage() {
                     }`}
                     onClick={() => handleCTA(plan)}
                     disabled={subscriptionIntendRequest.isPending}
+                    data-testid={`subscription-cta-${plan.tier === "SUBSCRIPTION_TIER_TYPE_PROFESSIONAL" ? "professional" : plan.tier === "SUBSCRIPTION_TIER_TYPE_STUDENT" ? "student" : "organization"}`}
                   >
                     {plan.ctaText}
                   </Button>

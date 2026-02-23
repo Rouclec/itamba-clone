@@ -64,6 +64,7 @@ export function RestrictionModal({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent
         showCloseButton={true}
+        closeButtonDataTestId="restriction-modal-close"
         className="flex w-[90vw] sm:max-w-[700px] flex-col p-0 gap-0 overflow-hidden rounded-lg border-0 shadow-lg sm:flex-row sm:items-stretch"
       >
         <div className="flex min-h-0 flex-1 flex-col sm:flex-row sm:items-stretch sm:min-w-0">
@@ -136,6 +137,7 @@ export function RestrictionModal({
                     handleOpenChange(false)
                   }}
                   className="w-fit rounded-md bg-[#17188B] px-6 text-white hover:bg-[#17188B]/90"
+                  data-testid="restriction-modal-upgrade"
                 >
                   {ctaText}
                 </Button>

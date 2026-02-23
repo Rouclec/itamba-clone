@@ -111,6 +111,7 @@ export function SignupForm() {
         </div>
 
         <PhoneInput
+          data-testid="signup-phone-input"
           value={phone}
           onChange={handlePhoneChange}
           onCountryChange={(c: Country) => setDialCode(c.dial_code)}
@@ -123,6 +124,7 @@ export function SignupForm() {
 
         <button
           type="submit"
+          data-testid="signup-phone-submit"
           disabled={!isFormValid || isLoading}
           className={`w-full h-11 rounded-lg font-semibold text-white transition-all flex items-center justify-center gap-2 ${
             !isFormValid || isLoading

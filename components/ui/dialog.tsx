@@ -51,11 +51,14 @@ function DialogContent({
   children,
   showCloseButton = true,
   closeButtonClassName,
+  closeButtonDataTestId,
   overlayClassName,
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Content> & {
   showCloseButton?: boolean
   closeButtonClassName?: string
+  /** Optional data-testid for the close (X) button so E2E can dismiss modals (e.g. first-login). */
+  closeButtonDataTestId?: string
   overlayClassName?: string
 }) {
   return (
@@ -73,6 +76,7 @@ function DialogContent({
         {showCloseButton && (
           <DialogPrimitive.Close
             data-slot="dialog-close"
+            data-testid={closeButtonDataTestId}
             className={cn(
               'ring-offset-background absolute top-4 right-4 flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors focus:outline-hidden disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*=\'size-\'])]:size-6',
               closeButtonClassName ?? 'bg-muted-fill hover:bg-hover',

@@ -206,6 +206,7 @@ export default function SignInPage() {
             error={emailError ?? undefined}
             placeholder="you@example.com"
             required
+            data-testid="signin-email"
           />
         )}
 
@@ -214,6 +215,7 @@ export default function SignInPage() {
             label={t("auth.password")}
             type={showPassword ? "text" : "password"}
             value={password}
+            data-testid="signin-password"
             onChange={(e) => {
               setPassword(e.target.value);
               if (passwordError) setPasswordError(null);
@@ -247,6 +249,7 @@ export default function SignInPage() {
         <Button
           type="submit"
           disabled={!isFormValid || isLoading}
+          data-testid="signin-submit"
           className={`w-full h-11 text-white transition-all ${
             !isFormValid || isLoading
               ? "bg-slate-500 cursor-not-allowed"
@@ -279,6 +282,7 @@ export default function SignInPage() {
             variant="secondary"
             onClick={switchToEmail}
             className="w-full h-11 font-normal"
+            data-testid="signin-switch-to-email"
           >
             <Image
               src="/assets/mail.png"

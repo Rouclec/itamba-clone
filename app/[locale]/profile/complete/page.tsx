@@ -182,6 +182,7 @@ export default function CompleteProfilePage() {
             }}
             error={fullNameError || undefined}
             placeholder="Marie Bliss"
+            data-testid="complete-profile-full-name"
           />
 
           {/* Phone – appears after first Continue */}
@@ -210,6 +211,7 @@ export default function CompleteProfilePage() {
               error={emailError || undefined}
               placeholder="mariebliss24@gmail.com"
               disabled={!isPhoneSignup}
+              data-testid="complete-profile-email"
             />
           )}
 
@@ -220,6 +222,7 @@ export default function CompleteProfilePage() {
               value={location}
               onChange={(e) => setLocation(e.target.value)}
               placeholder="Buea-Cameroon"
+              data-testid="complete-profile-location"
             />
           )}
 
@@ -230,6 +233,7 @@ export default function CompleteProfilePage() {
                 type="button"
                 onClick={handleContinue}
                 className="w-full h-11 bg-primary text-primary-foreground"
+                data-testid="complete-profile-submit"
               >
                 {t("common.continue")}
               </Button>
@@ -239,6 +243,7 @@ export default function CompleteProfilePage() {
                 onClick={handleSave}
                 disabled={saving}
                 className="w-full h-11 bg-primary text-primary-foreground"
+                data-testid="complete-profile-submit"
               >
                 {saving ? (
                   <>

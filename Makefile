@@ -47,7 +47,28 @@ get-client:
 	npm install @hey-api/client-axios@0.3.1 @hey-api/client-fetch@0.5.4 axios@1.7.9
 	rm -rf tempz
 
+e2e:
+	npm run e2e
 
-.PHONY: docker-build lint fix install-tools build-local run run-docker test coverage get-client analyze
+e2e-run:
+	npm run e2e:run
+
+e2e-auth:
+	npx cypress run --spec "cypress/e2e/auth-only.cy.ts"
+
+e2e-browse:
+	npx cypress run --spec "cypress/e2e/browse-library.cy.ts"
+
+e2e-subscription:
+	npx cypress run --spec "cypress/e2e/subscription-only.cy.ts"
+
+e2e-mobile:
+	CYPRESS_VIEWPORT_WIDTH=375 CYPRESS_VIEWPORT_HEIGHT=667 npx cypress run --spec "cypress/e2e/browse-library-mobile.cy.ts"
+
+e2e-happy-path:
+	npx cypress run --spec "cypress/e2e/happy-path.cy.ts"
+
+
+.PHONY: docker-build lint fix install-tools build-local run run-docker test coverage get-client analyze e2e e2e-run e2e-auth e2e-browse e2e-subscription e2e-mobile e2e-happy-path
 
 

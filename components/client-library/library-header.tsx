@@ -77,6 +77,7 @@ export function LibraryHeader() {
           <button
             type="button"
             className="flex items-center gap-2 px-2 py-1.5 hover:bg-hover min-w-0"
+            data-testid="header-user-menu"
           >
             <Avatar className="size-8 shrink-0 rounded-full bg-primary/20">
               <AvatarFallback className="rounded-full bg-primary/20 text-primary text-sm">
@@ -152,6 +153,7 @@ export function LibraryHeader() {
             <DropdownMenuItem
               onClick={() => signOut()}
               className="cursor-pointer text-red-600 focus:bg-surface focus:text-foreground data-highlighted:bg-surface data-highlighted:text-foreground"
+              data-testid="header-logout"
             >
               <LogOut className="size-4 text-red-500" />
               {t("client.logOut")}

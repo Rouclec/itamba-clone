@@ -8,6 +8,8 @@ interface OTPInputProps {
   onChange: (value: string) => void
   onComplete?: (value: string) => void
   error?: boolean
+  /** For E2E tests - applied to first digit input */
+  'data-testid'?: string
 }
 
 export function OTPInputImproved({
@@ -16,6 +18,7 @@ export function OTPInputImproved({
   onChange,
   onComplete,
   error = false,
+  'data-testid': dataTestId,
 }: OTPInputProps) {
   const inputRefs = useRef<(HTMLInputElement | null)[]>([])
 
@@ -76,6 +79,7 @@ export function OTPInputImproved({
         {Array.from({ length }).map((_, index) => (
           <input
             key={index}
+            data-testid={index === 0 ? dataTestId : undefined}
             ref={(el) => {
               inputRefs.current[index] = el
             }}

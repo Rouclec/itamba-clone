@@ -53,6 +53,7 @@ function PaymentMethodCard({
     <button
       type="button"
       onClick={onSelect}
+      data-testid={`payment-method-${method.id}`}
       className={`flex flex-col items-start gap-2 rounded-lg border border-border py-2 px-4 transition ${
         isSelected
           ? "border-primary bg-primary/5"
@@ -325,6 +326,7 @@ function PaymentPageContent() {
                   onBlur={() => phoneDigits && validatePhone()}
                   error={phoneError ?? undefined}
                   required
+                  data-testid="payment-phone-input"
                 />
               </div>
             )}
@@ -352,6 +354,7 @@ function PaymentPageContent() {
                   error={emailError ?? undefined}
                   placeholder="you@example.com"
                   required
+                  data-testid="payment-email-input"
                 />
               </div>
             )}
@@ -365,6 +368,7 @@ function PaymentPageContent() {
             }`}
             onClick={validateAndConfirm}
             disabled={isPending || !isInputValid}
+            data-testid="payment-confirm"
           >
             {isPending ? t("common.loading") : t("payment.confirmPayment")}
           </Button>

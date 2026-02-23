@@ -181,6 +181,7 @@ export default function PasswordPage() {
         {/* Submit Button */}
         <button
           type="submit"
+          data-testid="signup-password-submit"
           disabled={!isFormValid || isLoading}
           className={`w-full h-11 rounded-lg font-semibold text-white transition-all flex items-center justify-center gap-2 ${
             !isFormValid || isLoading

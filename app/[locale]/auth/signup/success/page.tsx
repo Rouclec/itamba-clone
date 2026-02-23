@@ -74,6 +74,7 @@ export default function SuccessPage() {
           <Button
             onClick={handleCompleteProfile}
             className="w-full h-12 bg-primary text-primary-foreground hover:bg-primary/90"
+            data-testid="signup-success-complete-profile"
           >
             {t('auth.completeProfile')}
           </Button>

@@ -225,6 +225,7 @@ export default function OTPVerifyPage() {
           onChange={setOtp}
           onComplete={handleOTPComplete}
           error={!!otpError}
+          data-testid="signup-otp-input"
         />
 
         {/* Resend OTP */}
