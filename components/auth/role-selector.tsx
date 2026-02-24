@@ -43,6 +43,7 @@ export function RoleSelector({
         <Button
           key={role.id}
           type="button"
+          data-testid={`signup-career-${role.id}`}
           variant={value === role.id ? 'default' : 'outline'}
           onClick={() => onChange(role.id)}
           disabled={disabled}

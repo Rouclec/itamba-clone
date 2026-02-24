@@ -79,7 +79,7 @@ export function BookmarksProvider({ children }: { children: React.ReactNode }) {
     () =>
       annotationServiceListsUsersBookmarksQueryKey({
         path: { userId: userId ?? "" },
-        query: { page: "1" },
+        query: { page: "1", pageSize: "100000" },
       }),
     [userId],
   );
@@ -92,7 +92,8 @@ export function BookmarksProvider({ children }: { children: React.ReactNode }) {
         return (
           typeof key === "object" &&
           key !== null &&
-          (key as { _id?: string })._id === "annotationServiceListsUsersBookmarks"
+          (key as { _id?: string })._id ===
+            "annotationServiceListsUsersBookmarks"
         );
       },
     });
@@ -114,23 +115,16 @@ export function BookmarksProvider({ children }: { children: React.ReactNode }) {
     onSettled: () => setBookmarkPendingMaterialId(null),
   });
 
-  const syncFromServer = useCallback(
-    (bookmarks: v2Bookmark[] | undefined) => {
-      const list = bookmarks ?? [];
-      setBookmarksList(list);
-      setDisplayBookmarkedIds(buildSet(list));
-    },
-    [],
-  );
+  const syncFromServer = useCallback((bookmarks: v2Bookmark[] | undefined) => {
+    const list = bookmarks ?? [];
+    setBookmarksList(list);
+    setDisplayBookmarkedIds(buildSet(list));
+  }, []);
 
   const toggleBookmark = useCallback(
     (params: BookmarkToggleParams) => {
-      const {
-        materialId,
-        materialRef,
-        bookmarksExceeded,
-        onLimitReached,
-      } = params;
+      const { materialId, materialRef, bookmarksExceeded, onLimitReached } =
+        params;
       if (!userId) return;
 
       const isBookmarked = displayBookmarkedIds.has(materialId);
@@ -208,7 +202,7 @@ export function useBookmarksQuery() {
   const query = useQuery({
     ...annotationServiceListsUsersBookmarksOptions({
       path: { userId: userId ?? "" },
-      query: { page: "1" },
+      query: { page: "1", pageSize: "100000" },
     }),
     enabled: !!userId,
     staleTime: 45 * 1000,

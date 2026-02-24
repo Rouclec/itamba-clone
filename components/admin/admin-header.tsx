@@ -59,7 +59,7 @@ export function AdminHeader() {
         ) : null}
       </div>
       <Button variant="outline" size="sm" asChild>
-        <LocaleLink href="/client" className="gap-2">
+        <LocaleLink href="/client" className="gap-2" data-testid="admin-go-to-library">
           {t('admin.goToLibrary')}
         </LocaleLink>
       </Button>

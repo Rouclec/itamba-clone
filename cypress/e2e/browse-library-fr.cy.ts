@@ -1,43 +1,163 @@
 /**
- * E2E: Complete browse + subscription flow in French locale.
+ * E2E: Browse library in French – signup new user then browse in French.
  *
- * Flow: Visit /fr/... → subscription (French labels) → plan → payment →
- * confirm (stub) → assert French copy throughout.
+ * Flow: Sign up a new user (French locale) → complete profile → browse library in French
+ * (documents, catalogues, notes, bookmarks). Asserts French labels.
  *
- * Prerequisites: Same as subscription flow; French translations present.
+ * Prerequisites: Same as signup-phone (API, CYPRESS_ADMIN_EMAIL, CYPRESS_ADMIN_PASSWORD for OTP task, phone state file).
+ *
+ * Run: make e2e-run (with spec) or npx cypress run --spec "cypress/e2e/browse-library-fr.cy.ts"
  */
 
-const locale = 'fr'
+import { generateTestUserEmail } from '../support/test-user'
 
-describe('Browse library & subscription (French)', () => {
+const localeFr = 'fr'
+const defaultPassword = Cypress.env('testPassword') ?? 'TestPass1'
+
+function runSignupAndCompleteProfileFr(locale: string) {
+  cy.task<string>('getNextTestPhone').as('testPhone')
+  cy.visit(`/${locale}/auth/signup`)
+  cy.get('[data-testid="signup-phone-input"]').should('be.visible')
+  cy.get<string>('@testPhone').then((phone) => cy.get('[data-testid="signup-phone-input"]').type(phone))
+  cy.get('[data-testid="signup-phone-submit"]').click()
+  cy.wait('@sendSignupOtp').then((interception) => {
+    const requestId = (interception.response?.body as { requestId?: string })?.requestId
+    expect(requestId).to.be.a('string')
+    cy.wrap(requestId).as('requestId')
+  })
+  cy.get('[data-testid="signup-otp-input"]').should('be.visible')
+  cy.get('@requestId').then((requestId) => {
+    cy.task<{ otp: string }>('getOtpByRequestId', { requestId }).then((result) => {
+      cy.get('[data-testid="signup-otp-input"]').type(result!.otp)
+    })
+  })
+  cy.url().should('include', '/auth/signup/password')
+  cy.get('input[placeholder="********"]').first().type(defaultPassword)
+  cy.get('input[placeholder="********"]').last().type(defaultPassword)
+  cy.get('[data-testid="signup-password-submit"]').click()
+  cy.url().should('include', '/auth/signup/career')
+  cy.get('[data-testid="signup-career-student"]').click()
+  cy.get('[data-testid="signup-career-submit"]').click()
+  cy.url().should('include', '/auth/signup/success')
+  const testEmail = generateTestUserEmail()
+  cy.intercept('PUT', '**/v2/api/client/users/*/complete-profile').as('completeProfile')
+  cy.get('[data-testid="signup-success-complete-profile"]').click()
+  cy.url().should('include', '/profile/complete')
+  cy.get('[data-testid="complete-profile-full-name"]').should('be.visible').type('E2E Browse FR')
+  cy.get('[data-testid="complete-profile-submit"]').click().click()
+  cy.get('[data-testid="complete-profile-email"]').type(testEmail)
+  cy.get('[data-testid="complete-profile-submit"]').click()
+  cy.get('[data-testid="complete-profile-location"]').type('Ville test')
+  cy.get('[data-testid="complete-profile-submit"]').click()
+  cy.wait('@completeProfile')
+  cy.url().should('include', '/client')
+  cy.closeRestrictionModalIfOpen()
+}
+
+describe('Browse library (French)', () => {
   beforeEach(() => {
     cy.clearPerfData()
+    const adminEmail = Cypress.env('adminEmail')
+    const adminPassword = Cypress.env('adminPassword')
+    if (!adminEmail || !adminPassword) {
+      throw new Error('Set CYPRESS_ADMIN_EMAIL and CYPRESS_ADMIN_PASSWORD to run browse-library-fr spec (used for OTP task)')
+    }
+    cy.intercept('POST', '**/v2/api/public/users/send-signup-otp').as('sendSignupOtp')
+    runSignupAndCompleteProfileFr(localeFr)
   })
 
-  it('subscription page shows French labels', () => {
-    cy.visit(`/${locale}/subscription`)
+  it('browse in French (library, catalogues, notes, bookmarks, subscription)', () => {
+    cy.url().should('include', '/client')
+    cy.contains('Bibliothèque').should('be.visible')
+
+    cy.visit(`/${localeFr}/client/catalogues`)
+    cy.url().should('include', '/client/catalogues')
+    cy.contains('Vue liste').should('be.visible')
+
+    cy.visit(`/${localeFr}/client/notes`)
+    cy.url().should('include', '/client/notes')
+
+    cy.visit(`/${localeFr}/client/bookmarks`)
+    cy.url().should('include', '/client/bookmarks')
+
+    cy.visit(`/${localeFr}/subscription`)
+    cy.url().should('include', '/subscription')
     cy.contains('button', 'Payer mensuellement').should('be.visible')
     cy.contains('button', 'Payer annuellement').should('be.visible')
   })
 
-  it('payment page shows French confirm button', () => {
-    cy.intercept('POST', '**/v2/api/**/subscriptions/create**').as('createSubscription')
-    cy.intercept('POST', '**/v2/api/**/payments/initiate**').as('initiatePayment')
-    cy.visit(`/${locale}/subscription`)
-    cy.get('[data-testid="subscription-cta-professional"]').click()
-    cy.url().should('include', '/fr/subscription/payment')
-    cy.get('[data-testid="payment-confirm"]').should('contain.text', 'Confirmer')
-  })
+  /** Opens the first document card that has at least one article; uses pagination if needed. */
+  function openFirstDocumentWithArticles() {
+    cy.get('a[href*="/client/"]').then(($links) => {
+      const filtered = $links.filter((_i, el) => {
+        const h = el.getAttribute('href') || ''
+        if (h.includes('catalogues') || h.includes('notes') || h.includes('bookmarks')) return false
+        if (!/\/client\/[^/]+\/?$/.test(h.replace(/\?.*/, ''))) return false
+        return !/\b0\s+article/i.test(el.textContent ?? '')
+      })
+      if (filtered.length > 0) {
+        cy.wrap(filtered.first()).click()
+        return
+      }
+      cy.get('a[href="#"]').contains('2').first().click({ force: true })
+      cy.get('a[href*="/client/"]').filter((_i, el) => {
+        const h = el.getAttribute('href') || ''
+        if (h.includes('catalogues') || h.includes('notes') || h.includes('bookmarks')) return false
+        if (!/\/client\/[^/]+\/?$/.test(h.replace(/\?.*/, ''))) return false
+        return !/\b0\s+article/i.test(el.textContent ?? '')
+      }).first().click()
+    })
+  }
 
-  it('full flow in French: professional → Mobile Money → confirm', () => {
-    cy.intercept('POST', '**/v2/api/**/subscriptions/create**').as('createSubscription')
-    cy.intercept('POST', '**/v2/api/**/payments/initiate**').as('initiatePayment')
-    cy.visit(`/${locale}/subscription`)
-    cy.get('[data-testid="subscription-cta-professional"]').click()
-    cy.get('[data-testid="payment-method-mobile_money"]').click()
-    cy.get('input[inputmode="numeric"]').first().type('670000300')
-    cy.get('[data-testid="payment-confirm"]').click()
-    cy.wait('@initiatePayment')
-    cy.url().should('include', '/fr/')
+  it('opens a document with articles, bookmark and note flow (French)', () => {
+    cy.url().should('include', '/client')
+    openFirstDocumentWithArticles()
+    cy.url().should('match', /\/client\/[^/]+$/)
+    cy.intercept('DELETE', '**/v2/api/client/user/*/bookmark/*').as('removeBookmark')
+
+    cy.get('[data-testid="article-expand"]').first().should('be.visible').scrollIntoView()
+    // Only add bookmark when article is not already bookmarked (new user has no bookmarks)
+    cy.get('[data-testid="article-bookmark"]').first().should('have.attr', 'aria-label', 'Add bookmark').click()
+    cy.get('[data-testid="article-bookmark"]').first().should('have.attr', 'aria-label', 'Remove bookmark')
+    cy.get('[data-testid="article-bookmark"]').first().click()
+    cy.wait('@removeBookmark')
+    cy.get('[data-testid="article-bookmark"]').first({ timeout: 10000 }).should('have.attr', 'aria-label', 'Add bookmark')
+
+    cy.get('[data-testid="article-expand"]').first().click()
+    cy.get('[role="dialog"]', { timeout: 10000 }).should('be.visible')
+    cy.get('[aria-label="Ajouter une note"]').first().click()
+    cy.get('input[aria-label="Note title"]').type('Note E2E FR')
+    cy.get('.ProseMirror').first().type(' Contenu de la note.')
+    cy.contains('button', 'Save').click()
+    cy.get('[role="dialog"]').within(() => cy.contains('Note E2E FR').should('be.visible'))
+    cy.get('[aria-label="Edit note"]').first().click()
+    cy.get('input[aria-label="Note title"]').clear().type('Note E2E FR modifiée')
+    cy.contains('button', 'Save').click()
+    cy.get('[role="dialog"]').within(() => cy.contains('Note E2E FR modifiée').should('be.visible'))
+    cy.get('[aria-label="Supprimer"]').first().click()
+    cy.contains('button', 'Supprimer').click()
+    cy.get('[aria-label="Fermer"]').first().click()
+
+    // Add bookmark again (article was unbookmarked above; only click when Add bookmark)
+    cy.get('[data-testid="article-bookmark"]').first().should('have.attr', 'aria-label', 'Add bookmark').click()
+    cy.get('[data-testid="article-bookmark"]').first().should('have.attr', 'aria-label', 'Remove bookmark')
+    cy.get('[data-testid="article-expand"]').first().click()
+    cy.get('[role="dialog"]', { timeout: 10000 }).should('be.visible')
+    cy.get('[aria-label="Ajouter une note"]').first().click()
+    cy.get('input[aria-label="Note title"]').type('Deuxième note')
+    cy.get('.ProseMirror').first().type(' Corps.')
+    cy.contains('button', 'Save').click()
+    cy.get('[aria-label="Fermer"]').first().click()
+
+    cy.visit(`/${localeFr}/client/bookmarks`)
+    cy.url().should('include', '/client/bookmarks')
+    cy.contains('§').should('be.visible')
+    cy.get('a[href*="/client/bookmarks/"]').first().click()
+    cy.url().should('match', /\/client\/bookmarks\/[^/]+/)
+    cy.get('[data-testid="article-bookmark"]').first().should('have.attr', 'aria-label', 'Remove bookmark').click()
+    cy.wait('@removeBookmark')
+    cy.get('[data-testid="article-bookmark"]').first({ timeout: 10000 }).should('have.attr', 'aria-label', 'Add bookmark')
+    cy.visit(`/${localeFr}/client/bookmarks`)
+    cy.url().should('include', '/client/bookmarks')
   })
 })

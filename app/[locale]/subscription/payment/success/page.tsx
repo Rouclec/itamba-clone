@@ -80,6 +80,7 @@ function PaymentSuccessPageContent() {
           className="w-full max-w-xs py-3"
           onClick={handlePrimaryAction}
           disabled={isNavigating}
+          data-testid="payment-success-return-dashboard"
         >
           {isNavigating
             ? t("common.loading")

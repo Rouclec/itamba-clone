@@ -1,4 +1,4 @@
-import type { v2User } from "@/@hey_api/users.swagger";
+import type { v2AdminRole, v2User } from "@/@hey_api/users.swagger";
 
 /**
  * V1 user shape from the backend (GET user by id).
@@ -26,7 +26,7 @@ export interface V1User {
 }
 
 /** Admin slugs from backend (snake_case). Map to v2 ADMIN_ROLE_* for app use. */
-const ADMIN_SLUG_TO_V2: Record<string, string> = {
+const ADMIN_SLUG_TO_V2: Record<string, v2AdminRole> = {
   unspecified: "ADMIN_ROLE_UNSPECIFIED",
   super_admin: "ADMIN_ROLE_SUPER_ADMIN",
   library_administrator: "ADMIN_ROLE_LIBRARY_ADMINISTRATOR",
@@ -36,6 +36,9 @@ const ADMIN_SLUG_TO_V2: Record<string, string> = {
   customers_administrator: "ADMIN_ROLE_CUSTOMERS_ADMINISTRATOR",
   accounts_manager: "ADMIN_ROLE_ACCOUNTS_MANAGER",
 };
+
+/** Valid v2 admin role values (for "already v2" check). */
+const V2_ADMIN_ROLES = new Set<string>(Object.values(ADMIN_SLUG_TO_V2));
 
 /** Map v1 user_role to v2 USER_ROLE_* */
 function toV2UserRole(role?: string): v2User["userRole"] {
@@ -49,10 +52,19 @@ function toV2UserRole(role?: string): v2User["userRole"] {
 }
 
 /** Map v1 user_role (admin slug) to v2 ADMIN_ROLE_* when backend returns snake_case. */
-function toV2AdminRole(role?: string): string | undefined {
+export function toV2AdminRole(role?: string): string | undefined {
   if (!role) return undefined;
   const slug = role.toLowerCase().trim();
   return ADMIN_SLUG_TO_V2[slug];
+}
+
+/** Map v1 or v2 role string to v2 ADMIN_ROLE_* for API requests. Use when sending role to v2 endpoints. */
+export function mapToV2AdminRole(role?: string): v2AdminRole | undefined {
+  if (!role?.trim()) return undefined;
+  const r = role.trim();
+  if (V2_ADMIN_ROLES.has(r)) return r as v2AdminRole;
+  const mapped = toV2AdminRole(r);
+  return mapped as v2AdminRole;
 }
 
 /** Map v1 user_account_status to v2 if possible */

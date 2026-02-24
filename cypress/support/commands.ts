@@ -65,6 +65,20 @@ Cypress.Commands.add('getPageLoadTime', () => {
   })
 })
 
+/**
+ * If the restriction modal (first-login or limit) is open, click the close (X) button
+ * so the page is interactive again. Then wait for the header user menu to be visible.
+ * Call this before interacting with header or other UI when a modal might be open.
+ */
+Cypress.Commands.add('closeRestrictionModalIfOpen', () => {
+  cy.get('body').then(($body) => {
+    if ($body.find('[data-testid="restriction-modal-close"]').length > 0) {
+      cy.get('[data-testid="restriction-modal-close"]').click()
+    }
+  })
+  cy.get('[data-testid="header-user-menu"]').should('be.visible')
+})
+
 declare global {
   namespace Cypress {
     interface Chainable {
@@ -73,6 +87,7 @@ declare global {
       getPerfData(): Chainable<{ requests: typeof perfRequests; screenTimes: typeof screenTimes }>
       login(email: string, password: string): Chainable<void>
       getPageLoadTime(): Chainable<number | null>
+      closeRestrictionModalIfOpen(): Chainable<void>
     }
   }
 }

@@ -361,6 +361,12 @@ function DocumentContent({
                   <div
                     role="button"
                     tabIndex={0}
+                    data-testid="article-bookmark"
+                    aria-label={
+                      item.id && bookmarkedMaterialIds.has(item.id)
+                        ? "Remove bookmark"
+                        : "Add bookmark"
+                    }
                     aria-busy={item.id ? bookmarkPendingMaterialId === item.id : undefined}
                     className={cn(
                       "size-8 rounded-md items-center justify-center flex bg-hover hover:bg-hover-light",
@@ -389,6 +395,7 @@ function DocumentContent({
                   <div
                     role="button"
                     tabIndex={0}
+                    data-testid="article-expand"
                     className="cursor-pointer size-8 rounded-md items-center justify-center flex bg-hover hover:bg-hover-light"
                     onClick={() =>
                       onExpandClick?.({

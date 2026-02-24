@@ -43,12 +43,11 @@ describe('Authentication only', () => {
     cy.get('[data-testid="signup-password-submit"]').click()
 
     cy.url().should('include', '/auth/signup/career')
-    cy.contains('button', 'Student').click()
+    cy.get('[data-testid="signup-career-student"]').click()
     cy.get('[data-testid="signup-career-submit"]').click()
 
     cy.url().should('include', '/auth/signup/success')
     const testEmail = generateTestUserEmail()
-    cy.intercept('PUT', '**/v2/api/client/users/*/complete-profile').as('completeProfile')
     cy.get('[data-testid="signup-success-complete-profile"]').click()
 
     cy.url().should('include', '/profile/complete')
@@ -59,20 +58,15 @@ describe('Authentication only', () => {
     cy.get('[data-testid="complete-profile-location"]').type('Test City')
     cy.get('[data-testid="complete-profile-submit"]').click()
 
-    cy.wait('@completeProfile')
     cy.url().should('include', '/client')
 
-    // Close first-time user modal if open so header user menu is clickable
-    cy.get('body').then(($body) => {
-      if ($body.find('[data-testid="restriction-modal-close"]').length) {
-        cy.get('[data-testid="restriction-modal-close"]').click()
-      }
-    })
-    cy.get('[data-testid="header-user-menu"]').should('be.visible').click()
+    cy.closeRestrictionModalIfOpen()
+    cy.get('[data-testid="header-user-menu"]').click()
     cy.get('[data-testid="header-logout"]').click()
-    cy.visit(`/${locale}/auth/signin`)
-    cy.get('[data-testid="signin-switch-to-email"]').click()
-    cy.get('[data-testid="signin-email"]').type(testEmail)
+    cy.url().should("include", '/auth/signin')
+
+    // Sign in with phone (same as signup method)
+    cy.get<string>('@testPhone').then((phone) => cy.get('[data-testid="signin-phone-input"]').type(phone))
     cy.get('[data-testid="signin-password"]').type(defaultPassword)
     cy.get('[data-testid="signin-submit"]').click()
     cy.url().should('include', '/client')

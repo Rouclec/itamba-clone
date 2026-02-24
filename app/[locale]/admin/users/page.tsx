@@ -1,6 +1,6 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
+import { useState } from "react";
 import {
   Plus,
   Mail,
@@ -9,9 +9,9 @@ import {
   UserPlus,
   Loader2,
   MoreHorizontal,
-} from 'lucide-react'
-import { useT } from '@/app/i18n/client'
-import { Button } from '@/components/ui/button'
+} from "lucide-react";
+import { useT } from "@/app/i18n/client";
+import { Button } from "@/components/ui/button";
 import {
   Table,
   TableBody,
@@ -19,26 +19,26 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
+} from "@/components/ui/table";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from '@/components/ui/tooltip'
+} from "@/components/ui/tooltip";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+} from "@/components/ui/dropdown-menu";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
+} from "@/components/ui/select";
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -47,10 +47,10 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { useAuth } from '@/lib/auth-context'
-import { useIsMobile } from '@/hooks/use-mobile'
+} from "@/components/ui/alert-dialog";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useAuth } from "@/lib/auth-context";
+import { useIsMobile } from "@/hooks/use-mobile";
 import {
   useGetAdminUsers,
   useInviteAdmin,
@@ -59,11 +59,13 @@ import {
   useDeactivateAdmin,
   useUpdateAdminRole,
   ADMIN_ROLES,
-} from '@/hooks/use-admin-users'
-import type { User } from '@/types/user/type.user'
-import { InviteAdminModal } from '@/components/admin/invite-admin-modal'
-import { toast } from 'sonner'
-import { cn } from '@/lib/utils'
+} from "@/hooks/use-admin-users";
+import type { v2AdminRole } from "@/@hey_api/users.swagger";
+import type { User } from "@/types/user/type.user";
+import { mapToV2AdminRole } from "@/lib/user-types";
+import { InviteAdminModal } from "@/components/admin/invite-admin-modal";
+import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 import {
   Pagination,
   PaginationContent,
@@ -71,145 +73,161 @@ import {
   PaginationLink,
   PaginationNext,
   PaginationPrevious,
-} from '@/components/ui/pagination'
+} from "@/components/ui/pagination";
 
-const PAGE_SIZE = 10
+const PAGE_SIZE = 10;
 
 function getPaginationSlots(
   page: number,
   totalPages: number,
-  maxVisible?: number
-): (number | 'ellipsis')[] {
-  const limit = maxVisible ?? 7
+  maxVisible?: number,
+): (number | "ellipsis")[] {
+  const limit = maxVisible ?? 7;
   if (totalPages <= limit) {
-    return Array.from({ length: totalPages }, (_, i) => i + 1)
+    return Array.from({ length: totalPages }, (_, i) => i + 1);
   }
   if (page <= 4) {
-    return [1, 2, 3, 4, 'ellipsis', totalPages - 2, totalPages - 1, totalPages]
+    return [1, 2, 3, 4, "ellipsis", totalPages - 2, totalPages - 1, totalPages];
   }
   if (page >= totalPages - 2) {
-    return [1, 2, 3, 'ellipsis', totalPages - 2, totalPages - 1, totalPages]
+    return [1, 2, 3, "ellipsis", totalPages - 2, totalPages - 1, totalPages];
   }
-  return [1, 'ellipsis', page - 1, page, page + 1, 'ellipsis', totalPages]
+  return [1, "ellipsis", page - 1, page, page + 1, "ellipsis", totalPages];
 }
 
 /** Fallback when no translation key: strip ACCOUNT_ prefix, title case. */
 function formatStatusDisplay(status: string | undefined): string {
-  if (!status || !status.trim()) return '—'
-  let s = status.trim()
-  if (s.toUpperCase().startsWith('ACCOUNT_')) {
-    s = s.slice(8)
+  if (!status || !status.trim()) return "—";
+  let s = status.trim();
+  if (s.toUpperCase().startsWith("ACCOUNT_")) {
+    s = s.slice(8);
   }
   const titleCased = s
-    .replace(/_/g, ' ')
+    .replace(/_/g, " ")
     .toLowerCase()
-    .replace(/\b\w/g, (c) => c.toUpperCase())
-  if (titleCased === 'Activated') return 'Active'
-  return titleCased
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+  if (titleCased === "Activated") return "Active";
+  return titleCased;
 }
 
 /** Map backend status to i18n key (admin.users.statusX). Includes US and UK spellings. */
 const STATUS_I18N_KEYS: Record<string, string> = {
-  ACCOUNT_ACTIVATED: 'admin.users.statusActive',
-  ACCOUNT_REACTIVATED: 'admin.users.statusReactivated',
-  ACCOUNT_PENDING: 'admin.users.statusPending',
-  ACCOUNT_DEACTIVATED: 'admin.users.statusDeactivated',
-  INVITE_LINK_CANCELED: 'admin.users.statusInviteCanceled',
-  INVITE_CANCELED: 'admin.users.statusInviteCanceled',
-  INVITE_LINK_CANCELLED: 'admin.users.statusInviteCanceled',
-  INVITE_CANCELLED: 'admin.users.statusInviteCanceled',
-  PENDING_VERIFICATION: 'admin.users.statusPendingVerification',
-  ACTIVE: 'admin.users.statusActive',
-  SUSPENDED: 'admin.users.statusSuspended',
-  BANNED: 'admin.users.statusBanned',
-  DEACTIVATED: 'admin.users.statusDeactivated',
-  REACTIVATED: 'admin.users.statusReactivated',
-  PENDING: 'admin.users.statusPending',
-}
+  ACCOUNT_ACTIVATED: "admin.users.statusActive",
+  ACCOUNT_REACTIVATED: "admin.users.statusReactivated",
+  ACCOUNT_PENDING: "admin.users.statusPending",
+  ACCOUNT_DEACTIVATED: "admin.users.statusDeactivated",
+  INVITE_LINK_CANCELED: "admin.users.statusInviteCanceled",
+  INVITE_CANCELED: "admin.users.statusInviteCanceled",
+  INVITE_LINK_CANCELLED: "admin.users.statusInviteCanceled",
+  INVITE_CANCELLED: "admin.users.statusInviteCanceled",
+  PENDING_VERIFICATION: "admin.users.statusPendingVerification",
+  ACTIVE: "admin.users.statusActive",
+  SUSPENDED: "admin.users.statusSuspended",
+  BANNED: "admin.users.statusBanned",
+  DEACTIVATED: "admin.users.statusDeactivated",
+  REACTIVATED: "admin.users.statusReactivated",
+  PENDING: "admin.users.statusPending",
+};
 
 /** Translated status label; falls back to formatStatusDisplay for unknown statuses. */
 function getStatusDisplayLabel(
   status: string | undefined,
-  t: (key: string) => string
+  t: (key: string) => string,
 ): string {
-  if (!status?.trim()) return '—'
-  const key = STATUS_I18N_KEYS[status.trim().toUpperCase()]
-  if (key) return t(key)
-  return formatStatusDisplay(status)
+  if (!status?.trim()) return "—";
+  const key = STATUS_I18N_KEYS[status.trim().toUpperCase()];
+  if (key) return t(key);
+  return formatStatusDisplay(status);
 }
 
 /** Normalize backend role code to ADMIN_ROLE_* for matching. */
 function normalizeRoleCode(roleCode: string): string {
-  const upper = roleCode.trim().toUpperCase().replace(/\s+/g, '_')
-  if (upper.startsWith('ADMIN_ROLE_')) return upper
-  return `ADMIN_ROLE_${upper}`
+  const upper = roleCode.trim().toUpperCase().replace(/\s+/g, "_");
+  if (upper.startsWith("ADMIN_ROLE_")) return upper;
+  return `ADMIN_ROLE_${upper}`;
 }
 
 /** Return ADMIN_ROLES value when backend role matches (so Select and display stay in sync). */
 function getNormalizedRoleValue(roleCode: string | undefined): string {
-  if (!roleCode?.trim()) return ''
-  const normalized = normalizeRoleCode(roleCode)
+  if (!roleCode?.trim()) return "";
+  const normalized = normalizeRoleCode(roleCode);
   const found = ADMIN_ROLES.find(
     (r) =>
       r.value === roleCode ||
       r.value.toUpperCase() === roleCode!.trim().toUpperCase() ||
-      r.value.toUpperCase() === normalized
-  )
-  return found ? found.value : roleCode.trim()
+      r.value.toUpperCase() === normalized,
+  );
+  return found ? found.value : roleCode.trim();
 }
 
 /** Display label for a role code (translated if in ADMIN_ROLES, else title-cased). */
 function getRoleDisplayLabel(
   roleCode: string | undefined,
-  t: (key: string) => string
+  t: (key: string) => string,
 ): string {
-  if (!roleCode?.trim()) return '—'
-  const normalized = normalizeRoleCode(roleCode)
+  if (!roleCode?.trim()) return "—";
+  const normalized = normalizeRoleCode(roleCode);
   const found = ADMIN_ROLES.find(
     (r) =>
       r.value === roleCode ||
       r.value.toUpperCase() === roleCode!.trim().toUpperCase() ||
-      r.value.toUpperCase() === normalized
-  )
-  if (found) return t(found.labelKey)
-  return formatStatusDisplay(roleCode)
+      r.value.toUpperCase() === normalized,
+  );
+  if (found) return t(found.labelKey);
+  return formatStatusDisplay(roleCode);
 }
 
 export default function AdminUsersPage() {
-  const { t } = useT('translation')
-  const { userId, currentUser } = useAuth()
-  const actorId = userId ?? currentUser?.userId ?? ''
-  const actorName = currentUser?.fullName ?? undefined
+  const { t } = useT("translation");
+  const { userId, currentUser } = useAuth();
+  const actorId = userId ?? currentUser?.userId ?? "";
+  const actorName = currentUser?.fullName ?? undefined;
 
-  const [page, setPage] = useState(1)
-  const [inviteOpen, setInviteOpen] = useState(false)
-  const [deactivateTarget, setDeactivateTarget] = useState<User | null>(null)
-  const [reactivateTarget, setReactivateTarget] = useState<User | null>(null)
+  const [page, setPage] = useState(1);
+  const [inviteOpen, setInviteOpen] = useState(false);
+  const [deactivateTarget, setDeactivateTarget] = useState<User | null>(null);
+  const [reactivateTarget, setReactivateTarget] = useState<User | null>(null);
   const [roleChangeTarget, setRoleChangeTarget] = useState<{
-    user: User
-    newRole: string
-  } | null>(null)
+    user: User;
+    newRole: string;
+  } | null>(null);
 
-  const { data, isLoading } = useGetAdminUsers(actorId, page, PAGE_SIZE)
-  const inviteMutation = useInviteAdmin()
-  const resendMutation = useResendAdminInvitation()
-  const cancelMutation = useCancelAdminInvitation()
-  const deactivateMutation = useDeactivateAdmin()
-  const updateRoleMutation = useUpdateAdminRole()
+  const { data, isLoading } = useGetAdminUsers(actorId, page, PAGE_SIZE);
+  const inviteMutation = useInviteAdmin();
+  const resendMutation = useResendAdminInvitation();
+  const cancelMutation = useCancelAdminInvitation();
+  const deactivateMutation = useDeactivateAdmin();
+  const updateRoleMutation = useUpdateAdminRole();
 
-  const admins = data?.users ?? []
-  const totalItems = data?.statistics?.total_items ?? 0
-  const totalPages = Math.max(1, Math.ceil(totalItems / PAGE_SIZE))
-  const isMobile = useIsMobile()
+  const admins = data?.users ?? [];
+  const totalItems = data?.statistics?.total_items ?? 0;
+  const totalPages = Math.max(1, Math.ceil(totalItems / PAGE_SIZE));
+  const isMobile = useIsMobile();
 
-  const handleInviteSubmit = async (params: { email: string; role: import('@/@hey_api/users.swagger').v2AdminRole }) => {
+  const getErrorMessage = (err: unknown): string => {
+    const e = err as {
+      response?: { data?: { message?: string; error?: string; msg?: string } };
+      message?: string;
+    };
+    const msg =
+      e?.response?.data?.message ??
+      e?.response?.data?.error ??
+      e?.response?.data?.msg ??
+      (typeof e?.message === "string" ? e.message : null);
+    return typeof msg === "string" && msg.trim() ? msg.trim() : t("auth.errorOccurred");
+  };
+
+  const handleInviteSubmit = async (params: {
+    email: string;
+    role: v2AdminRole;
+  }) => {
     await inviteMutation.mutateAsync({
       actorUserId: actorId,
       actorName,
       email: params.email,
       role: params.role,
-    })
-  }
+    });
+  };
 
   const handleResend = (user: User) => {
     resendMutation.mutate(
@@ -217,14 +235,14 @@ export default function AdminUsersPage() {
         actorUserId: actorId,
         actorName,
         email: user.email,
-        role: (user.user_claims?.user_role as import('@/@hey_api/users.swagger').v2AdminRole) || undefined,
+        role: mapToV2AdminRole(user.user_claims?.user_role),
       },
       {
-        onSuccess: () => toast.success(t('admin.users.actionResendInvite')),
-        onError: () => toast.error(t('auth.errorOccurred')),
-      }
-    )
-  }
+        onSuccess: () => toast.success(t("admin.users.actionResendInvite")),
+        onError: (err) => toast.error(getErrorMessage(err) ?? t("auth.errorOccurred")),
+      },
+    );
+  };
 
   const handleCancelInvite = (user: User) => {
     cancelMutation.mutate(
@@ -234,68 +252,63 @@ export default function AdminUsersPage() {
         canceledBy: actorName,
       },
       {
-        onSuccess: () => toast.success(t('admin.users.actionCancelInvite')),
-        onError: () => toast.error(t('auth.errorOccurred')),
-      }
-    )
-  }
-
-  const getErrorMessage = (err: unknown): string => {
-    const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message
-    return typeof msg === 'string' ? msg : t('auth.errorOccurred')
-  }
+        onSuccess: () => toast.success(t("admin.users.actionCancelInvite")),
+        onError: (err) => toast.error(getErrorMessage(err) ?? t("auth.errorOccurred")),
+      },
+    );
+  };
 
   const handleConfirmDeactivate = (e: React.MouseEvent) => {
-    e.preventDefault()
-    if (!deactivateTarget) return
+    e.preventDefault();
+    if (!deactivateTarget) return;
     deactivateMutation.mutate(
       {
         user: {
           id: deactivateTarget.id,
           user_claims: {
-            user_role: deactivateTarget.user_claims?.user_role ?? '',
-            user_account_status: 'ACCOUNT_DEACTIVATED',
+            user_role: mapToV2AdminRole(deactivateTarget.user_claims?.user_role) ?? deactivateTarget.user_claims?.user_role ?? "",
+            user_account_status: "ACCOUNT_DEACTIVATED",
           },
         },
         super_admin_user_id: actorId,
       },
       {
         onSuccess: () => {
-          toast.success(t('admin.users.actionSuspend'))
-          setDeactivateTarget(null)
+          toast.success(t("admin.users.actionSuspend"));
+          setDeactivateTarget(null);
         },
-        onError: (err) => toast.error(getErrorMessage(err)),
-      }
-    )
-  }
+        onError: (err) => toast.error(getErrorMessage(err) ?? t("auth.errorOccurred")),
+      },
+    );
+  };
 
   const handleConfirmReactivate = (e: React.MouseEvent) => {
-    e.preventDefault()
-    if (!reactivateTarget) return
+    e.preventDefault();
+    if (!reactivateTarget) return;
     deactivateMutation.mutate(
       {
         user: {
           id: reactivateTarget.id,
           user_claims: {
-            user_role: reactivateTarget.user_claims?.user_role ?? '',
-            user_account_status: 'ACCOUNT_ACTIVATED',
+            user_role: mapToV2AdminRole(reactivateTarget.user_claims?.user_role) ?? reactivateTarget.user_claims?.user_role ?? "",
+            user_account_status: "ACCOUNT_ACTIVATED",
           },
         },
         super_admin_user_id: actorId,
       },
       {
         onSuccess: () => {
-          toast.success(t('admin.users.actionReactivate'))
-          setReactivateTarget(null)
+          toast.success(t("admin.users.actionReactivate"));
+          setReactivateTarget(null);
         },
-        onError: (err) => toast.error(getErrorMessage(err)),
-      }
-    )
-  }
+        onError: (err) => toast.error(getErrorMessage(err) ?? t("auth.errorOccurred")),
+      },
+    );
+  };
 
   const handleConfirmRoleChange = (e: React.MouseEvent) => {
-    e.preventDefault()
-    if (!roleChangeTarget) return
+    e.preventDefault();
+    if (!roleChangeTarget) return;
     updateRoleMutation.mutate(
       {
         user: {
@@ -306,19 +319,19 @@ export default function AdminUsersPage() {
       },
       {
         onSuccess: () => {
-          toast.success(t('admin.users.confirmSwitchRoleTitle'))
-          setRoleChangeTarget(null)
+          toast.success(t("admin.users.confirmSwitchRoleTitle"));
+          setRoleChangeTarget(null);
         },
-        onError: (err) => toast.error(getErrorMessage(err)),
-      }
-    )
-  }
+        onError: (err) => toast.error(getErrorMessage(err) ?? t("auth.errorOccurred")),
+      },
+    );
+  };
 
   const handleRoleSelect = (user: User, newRole: string) => {
-    const currentRole = user.user_claims?.user_role ?? ''
-    if (newRole === currentRole) return
-    setRoleChangeTarget({ user, newRole })
-  }
+    const currentRole = user.user_claims?.user_role ?? "";
+    if (newRole === currentRole) return;
+    setRoleChangeTarget({ user, newRole });
+  };
 
   return (
     <div className="flex min-h-0 min-w-0 flex-col overflow-x-hidden overflow-y-auto">
@@ -326,10 +339,10 @@ export default function AdminUsersPage() {
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-2xl font-semibold text-primary">
-              {t('admin.users.title')}
+              {t("admin.users.title")}
             </h1>
             <p className="text-body-text font-normal">
-              {t('admin.users.subtitle')}
+              {t("admin.users.subtitle")}
             </p>
           </div>
           <Button
@@ -337,7 +350,7 @@ export default function AdminUsersPage() {
             onClick={() => setInviteOpen(true)}
           >
             <Plus className="size-4" />
-            {t('admin.users.inviteAdmin')}
+            {t("admin.users.inviteAdmin")}
           </Button>
         </div>
 
@@ -346,16 +359,16 @@ export default function AdminUsersPage() {
             <TableHeader>
               <TableRow className="border-0 bg-surface">
                 <TableHead className="min-w-[220px] font-bold p-4">
-                  {t('admin.users.name')}
+                  {t("admin.users.name")}
                 </TableHead>
                 <TableHead className="min-w-[180px] font-bold p-4">
-                  {t('admin.users.role')}
+                  {t("admin.users.role")}
                 </TableHead>
                 <TableHead className="min-w-[120px] font-bold p-4">
-                  {t('admin.users.status')}
+                  {t("admin.users.status")}
                 </TableHead>
                 <TableHead className="font-bold p-4 text-right min-w-[100px]">
-                  {t('admin.users.actions')}
+                  {t("admin.users.actions")}
                 </TableHead>
               </TableRow>
             </TableHeader>
@@ -366,7 +379,7 @@ export default function AdminUsersPage() {
                     colSpan={4}
                     className="text-muted-foreground text-center py-8"
                   >
-                    {t('common.loading')}
+                    {t("common.loading")}
                   </TableCell>
                 </TableRow>
               ) : admins.length === 0 ? (
@@ -375,31 +388,29 @@ export default function AdminUsersPage() {
                     colSpan={4}
                     className="text-muted-foreground text-center py-8"
                   >
-                    {t('admin.users.noAdmins')}
+                    {t("admin.users.noAdmins")}
                   </TableCell>
                 </TableRow>
               ) : (
                 admins.map((user, index) => {
-                  const status = user.user_claims?.user_account_status
-                  const isPending = status === 'ACCOUNT_PENDING'
+                  const status = user.user_claims?.user_account_status;
+                  const isPending = status === "ACCOUNT_PENDING";
                   const isInviteCanceled =
-                    status === 'INVITE_LINK_CANCELED' ||
-                    status === 'INVITE_CANCELED' ||
-                    (typeof status === 'string' &&
-                      status.toUpperCase().includes('INVITE') &&
-                      status.toUpperCase().includes('CANCEL'))
-                  const canResendInvite = isPending || isInviteCanceled
-                  const isActive =
-                    status === 'ACCOUNT_ACTIVATED' || status === 'ACCOUNT_REACTIVATED'
-                  const isDeactivated = status === 'ACCOUNT_DEACTIVATED'
-                  const displayName = user.user_name?.trim() || user.email
-                  const showEmailAsSecondary = !!user.user_name?.trim()
+                    status === "INVITE_LINK_CANCELED" ||
+                    (typeof status === "string" &&
+                      status.toUpperCase().includes("INVITE") &&
+                      status.toUpperCase().includes("CANCEL"));
+                  const canResendInvite = isPending || isInviteCanceled;
+                  const isActive = status === "ACCOUNT_ACTIVATED";
+                  const isDeactivated = status === "ACCOUNT_DEACTIVATED";
+                  const displayName = user.user_name?.trim() || user.email;
+                  const showEmailAsSecondary = !!user.user_name?.trim();
 
                   return (
                     <TableRow
                       key={user.id}
                       className={cn(
-                        index % 2 === 1 ? 'bg-[#FAFAFA]' : 'bg-white'
+                        index % 2 === 1 ? "bg-[#FAFAFA]" : "bg-white",
                       )}
                     >
                       <TableCell className="px-4 py-3">
@@ -413,7 +424,7 @@ export default function AdminUsersPage() {
                               />
                             ) : null}
                             <AvatarFallback className="text-xs bg-muted">
-                              {(user.user_name || user.email || '?')
+                              {(user.user_name || user.email || "?")
                                 .charAt(0)
                                 .toUpperCase()}
                             </AvatarFallback>
@@ -432,7 +443,11 @@ export default function AdminUsersPage() {
                       </TableCell>
                       <TableCell className="px-4 py-3">
                         <Select
-                          value={getNormalizedRoleValue(user.user_claims?.user_role) || undefined}
+                          value={
+                            getNormalizedRoleValue(
+                              user.user_claims?.user_role,
+                            ) || undefined
+                          }
                           onValueChange={(v) => handleRoleSelect(user, v)}
                         >
                           <SelectTrigger
@@ -442,7 +457,7 @@ export default function AdminUsersPage() {
                             <SelectValue>
                               {getRoleDisplayLabel(
                                 user.user_claims?.user_role,
-                                t
+                                t,
                               )}
                             </SelectValue>
                           </SelectTrigger>
@@ -466,7 +481,7 @@ export default function AdminUsersPage() {
                                 variant="ghost"
                                 size="icon"
                                 className="size-8"
-                                aria-label={t('admin.users.actions')}
+                                aria-label={t("admin.users.actions")}
                               >
                                 <MoreHorizontal className="size-4" />
                               </Button>
@@ -478,7 +493,7 @@ export default function AdminUsersPage() {
                                   disabled={resendMutation.isPending}
                                 >
                                   <Mail className="size-4 mr-2" />
-                                  {t('admin.users.actionResendInvite')}
+                                  {t("admin.users.actionResendInvite")}
                                 </DropdownMenuItem>
                               )}
                               {isPending && (
@@ -488,7 +503,7 @@ export default function AdminUsersPage() {
                                   className="text-destructive focus:text-destructive [&_svg]:text-destructive"
                                 >
                                   <XCircle className="size-4 mr-2" />
-                                  {t('admin.users.actionCancelInvite')}
+                                  {t("admin.users.actionCancelInvite")}
                                 </DropdownMenuItem>
                               )}
                               {isActive && (
@@ -497,7 +512,7 @@ export default function AdminUsersPage() {
                                   className="text-destructive focus:text-destructive"
                                 >
                                   <UserX className="size-4 mr-2" />
-                                  {t('admin.users.actionSuspend')}
+                                  {t("admin.users.actionSuspend")}
                                 </DropdownMenuItem>
                               )}
                               {isDeactivated && (
@@ -505,7 +520,7 @@ export default function AdminUsersPage() {
                                   onClick={() => setReactivateTarget(user)}
                                 >
                                   <UserPlus className="size-4 mr-2" />
-                                  {t('admin.users.actionReactivate')}
+                                  {t("admin.users.actionReactivate")}
                                 </DropdownMenuItem>
                               )}
                             </DropdownMenuContent>
@@ -513,7 +528,7 @@ export default function AdminUsersPage() {
                         </TooltipProvider>
                       </TableCell>
                     </TableRow>
-                  )
+                  );
                 })
               )}
             </TableBody>
@@ -527,47 +542,44 @@ export default function AdminUsersPage() {
                 <PaginationPrevious
                   href="#"
                   onClick={(e) => {
-                    e.preventDefault()
-                    if (page > 1) setPage((p) => p - 1)
+                    e.preventDefault();
+                    if (page > 1) setPage((p) => p - 1);
                   }}
                   aria-disabled={page <= 1}
-                  className={cn(page <= 1 && 'pointer-events-none opacity-50')}
+                  className={cn(page <= 1 && "pointer-events-none opacity-50")}
                 />
               </PaginationItem>
-              {getPaginationSlots(
-                page,
-                totalPages,
-                isMobile ? 4 : 7
-              ).map((slot, index) =>
-                slot === 'ellipsis' ? (
-                  <PaginationItem key={`ellipsis-${index}`}>
-                    <span className="px-2">…</span>
-                  </PaginationItem>
-                ) : (
-                  <PaginationItem key={slot}>
-                    <PaginationLink
-                      href="#"
-                      onClick={(e) => {
-                        e.preventDefault()
-                        setPage(slot)
-                      }}
-                      isActive={page === slot}
-                    >
-                      {slot}
-                    </PaginationLink>
-                  </PaginationItem>
-                )
+              {getPaginationSlots(page, totalPages, isMobile ? 4 : 7).map(
+                (slot, index) =>
+                  slot === "ellipsis" ? (
+                    <PaginationItem key={`ellipsis-${index}`}>
+                      <span className="px-2">…</span>
+                    </PaginationItem>
+                  ) : (
+                    <PaginationItem key={slot}>
+                      <PaginationLink
+                        href="#"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          setPage(slot);
+                        }}
+                        isActive={page === slot}
+                      >
+                        {slot}
+                      </PaginationLink>
+                    </PaginationItem>
+                  ),
               )}
               <PaginationItem>
                 <PaginationNext
                   href="#"
                   onClick={(e) => {
-                    e.preventDefault()
-                    if (page < totalPages) setPage((p) => p + 1)
+                    e.preventDefault();
+                    if (page < totalPages) setPage((p) => p + 1);
                   }}
                   aria-disabled={page >= totalPages}
                   className={cn(
-                    page >= totalPages && 'pointer-events-none opacity-50'
+                    page >= totalPages && "pointer-events-none opacity-50",
                   )}
                 />
               </PaginationItem>
@@ -585,16 +597,16 @@ export default function AdminUsersPage() {
       <AlertDialog
         open={!!deactivateTarget}
         onOpenChange={(open) => {
-          if (!open) setDeactivateTarget(null)
+          if (!open) setDeactivateTarget(null);
         }}
       >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              {t('admin.users.confirmDeactivateTitle')}
+              {t("admin.users.confirmDeactivateTitle")}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              {t('admin.users.confirmDeactivateDescription')}
+              {t("admin.users.confirmDeactivateDescription")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -602,7 +614,7 @@ export default function AdminUsersPage() {
               onClick={() => setDeactivateTarget(null)}
               disabled={deactivateMutation.isPending}
             >
-              {t('admin.users.cancel')}
+              {t("admin.users.cancel")}
             </AlertDialogCancel>
             <Button
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
@@ -612,7 +624,7 @@ export default function AdminUsersPage() {
               {deactivateMutation.isPending ? (
                 <Loader2 className="size-4 animate-spin" />
               ) : (
-                t('admin.users.actionSuspend')
+                t("admin.users.actionSuspend")
               )}
             </Button>
           </AlertDialogFooter>
@@ -622,16 +634,16 @@ export default function AdminUsersPage() {
       <AlertDialog
         open={!!reactivateTarget}
         onOpenChange={(open) => {
-          if (!open) setReactivateTarget(null)
+          if (!open) setReactivateTarget(null);
         }}
       >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              {t('admin.users.confirmReactivateTitle')}
+              {t("admin.users.confirmReactivateTitle")}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              {t('admin.users.confirmReactivateDescription')}
+              {t("admin.users.confirmReactivateDescription")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -639,7 +651,7 @@ export default function AdminUsersPage() {
               onClick={() => setReactivateTarget(null)}
               disabled={deactivateMutation.isPending}
             >
-              {t('admin.users.cancel')}
+              {t("admin.users.cancel")}
             </AlertDialogCancel>
             <Button
               onClick={handleConfirmReactivate}
@@ -648,7 +660,7 @@ export default function AdminUsersPage() {
               {deactivateMutation.isPending ? (
                 <Loader2 className="size-4 animate-spin" />
               ) : (
-                t('admin.users.actionReactivate')
+                t("admin.users.actionReactivate")
               )}
             </Button>
           </AlertDialogFooter>
@@ -658,31 +670,31 @@ export default function AdminUsersPage() {
       <AlertDialog
         open={!!roleChangeTarget}
         onOpenChange={(open) => {
-          if (!open) setRoleChangeTarget(null)
+          if (!open) setRoleChangeTarget(null);
         }}
       >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              {t('admin.users.confirmSwitchRoleTitle')}
+              {t("admin.users.confirmSwitchRoleTitle")}
             </AlertDialogTitle>
             <AlertDialogDescription asChild>
               <span className="block">
                 {roleChangeTarget && (
                   <>
-                    {t('admin.users.confirmSwitchRoleBeforeName')}
+                    {t("admin.users.confirmSwitchRoleBeforeName")}
                     <strong>
                       {roleChangeTarget.user.user_name?.trim() ||
                         roleChangeTarget.user.email}
                     </strong>
-                    {t('admin.users.confirmSwitchRoleAfterName')}
+                    {t("admin.users.confirmSwitchRoleAfterName")}
                     <strong>
                       {getRoleDisplayLabel(
                         roleChangeTarget.user.user_claims?.user_role,
-                        t
+                        t,
                       )}
                     </strong>
-                    {t('admin.users.confirmSwitchRoleAfterOldRole')}
+                    {t("admin.users.confirmSwitchRoleAfterOldRole")}
                     <strong>
                       {getRoleDisplayLabel(roleChangeTarget.newRole, t)}
                     </strong>
@@ -696,7 +708,7 @@ export default function AdminUsersPage() {
               onClick={() => setRoleChangeTarget(null)}
               disabled={updateRoleMutation.isPending}
             >
-              {t('admin.users.cancel')}
+              {t("admin.users.cancel")}
             </AlertDialogCancel>
             <Button
               onClick={handleConfirmRoleChange}
@@ -705,12 +717,12 @@ export default function AdminUsersPage() {
               {updateRoleMutation.isPending ? (
                 <Loader2 className="size-4 animate-spin" />
               ) : (
-                t('admin.users.confirm')
+                t("admin.users.confirm")
               )}
             </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
     </div>
-  )
+  );
 }

@@ -1,31 +1,42 @@
-import { defineConfig } from 'cypress'
-import { config as loadEnv } from 'dotenv'
-import * as fs from 'fs'
-import * as path from 'path'
+import { defineConfig } from "cypress";
+import { config as loadEnv } from "dotenv";
+import * as fs from "fs";
+import * as path from "path";
 
 // Load E2E env from file (local); CI sets these via workflow env / secrets
-loadEnv({ path: '.env.e2e' })
-loadEnv({ path: '.env.e2e.local' })
+loadEnv({ path: ".env.e2e" });
+loadEnv({ path: ".env.e2e.local" });
 
 function formatFetchError(err: unknown, base: string, step: string): string {
-  const e = err instanceof Error ? err : new Error(String(err))
-  const cause = e.cause instanceof Error ? e.cause : null
-  const code = cause && 'code' in cause ? (cause as NodeJS.ErrnoException).code : (e as NodeJS.ErrnoException).code
-  const detail = cause?.message ?? e.message
-  return `getOtpByRequestId: ${step} request failed (${base}). ${code ? `Code: ${code}. ` : ''}${detail}`
+  const e = err instanceof Error ? err : new Error(String(err));
+  const cause = e.cause instanceof Error ? e.cause : null;
+  const code =
+    cause && "code" in cause
+      ? (cause as NodeJS.ErrnoException).code
+      : (e as NodeJS.ErrnoException).code;
+  const detail = cause?.message ?? e.message;
+  return `getOtpByRequestId: ${step} request failed (${base}). ${
+    code ? `Code: ${code}. ` : ""
+  }${detail}`;
 }
 
 function buildPerformanceHtml(report: {
-  generatedAt: string
-  requests: Array<{ url: string; method: string; duration: number; status: number; label: string }>
-  screenDurations: Array<{ screen: string; durationMs: number }>
+  generatedAt: string;
+  requests: Array<{
+    url: string;
+    method: string;
+    duration: number;
+    status: number;
+    label: string;
+  }>;
+  screenDurations: Array<{ screen: string; durationMs: number }>;
 }): string {
-  const requests = report.requests
-  const screens = report.screenDurations
-  const reqLabels = requests.map((r) => r.label)
-  const reqDurations = requests.map((r) => r.duration)
-  const screenLabels = screens.map((s) => s.screen)
-  const screenDurations = screens.map((s) => Math.round(s.durationMs))
+  const requests = report.requests;
+  const screens = report.screenDurations;
+  const reqLabels = requests.map((r) => r.label);
+  const reqDurations = requests.map((r) => r.duration);
+  const screenLabels = screens.map((s) => s.screen);
+  const screenDurations = screens.map((s) => Math.round(s.durationMs));
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -56,7 +67,17 @@ function buildPerformanceHtml(report: {
     <table>
       <thead><tr><th>Method</th><th>URL</th><th>Duration (ms)</th><th>Status</th></tr></thead>
       <tbody>
-        ${requests.map((r) => `<tr><td>${r.method}</td><td title="${r.url.replace(/"/g, '&quot;')}">${r.label}</td><td>${r.duration}</td><td>${r.status}</td></tr>`).join('')}
+        ${requests
+          .map(
+            (r) =>
+              `<tr><td>${r.method}</td><td title="${r.url.replace(
+                /"/g,
+                "&quot;"
+              )}">${r.label}</td><td>${r.duration}</td><td>${
+                r.status
+              }</td></tr>`
+          )
+          .join("")}
       </tbody>
     </table>
   </div>
@@ -67,14 +88,27 @@ function buildPerformanceHtml(report: {
     <table>
       <thead><tr><th>Screen</th><th>Duration (ms)</th></tr></thead>
       <tbody>
-        ${screens.map((s) => `<tr><td>${s.screen}</td><td>${Math.round(s.durationMs)}</td></tr>`).join('')}
+        ${screens
+          .map(
+            (s) =>
+              `<tr><td>${s.screen}</td><td>${Math.round(
+                s.durationMs
+              )}</td></tr>`
+          )
+          .join("")}
       </tbody>
     </table>
   </div>
 
   <script>
-    const reqData = ${JSON.stringify({ labels: reqLabels, values: reqDurations })};
-    const screenData = ${JSON.stringify({ labels: screenLabels, values: screenDurations })};
+    const reqData = ${JSON.stringify({
+      labels: reqLabels,
+      values: reqDurations,
+    })};
+    const screenData = ${JSON.stringify({
+      labels: screenLabels,
+      values: screenDurations,
+    })};
 
     new Chart(document.getElementById('requestsChart'), {
       type: 'bar',
@@ -107,7 +141,7 @@ function buildPerformanceHtml(report: {
   </script>
 </body>
 </html>
-`
+`;
 }
 
 /**
@@ -118,12 +152,12 @@ function buildPerformanceHtml(report: {
  */
 export default defineConfig({
   e2e: {
-    baseUrl: process.env.CYPRESS_BASE_URL || 'http://localhost:3000',
+    baseUrl: process.env.CYPRESS_BASE_URL || "http://localhost:3000",
     // Disable web security so the browser allows cross-origin requests (e.g. app on localhost → API).
     // Only applies to Chrome-based browsers (Chrome, Edge, Electron). Firefox/WebKit do not support this.
     chromeWebSecurity: false,
-    specPattern: 'cypress/e2e/**/*.cy.{js,jsx,ts,tsx}',
-    supportFile: 'cypress/support/e2e.ts',
+    specPattern: "cypress/e2e/**/*.cy.{js,jsx,ts,tsx}",
+    supportFile: "cypress/support/e2e.ts",
     viewportWidth: Number(process.env.CYPRESS_VIEWPORT_WIDTH) || 1280,
     viewportHeight: Number(process.env.CYPRESS_VIEWPORT_HEIGHT) || 720,
     video: true,
@@ -133,95 +167,113 @@ export default defineConfig({
     responseTimeout: 10000,
     setupNodeEvents(on, config) {
       // Optional: read env from cypress.env.json or keep using process.env
-      config.env = config.env || {}
+      config.env = config.env || {};
       if (process.env.CYPRESS_API_BASE_URL)
-        config.env.apiBaseUrl = process.env.CYPRESS_API_BASE_URL
+        config.env.apiBaseUrl = process.env.CYPRESS_API_BASE_URL;
       if (process.env.CYPRESS_ADMIN_EMAIL)
-        config.env.adminEmail = process.env.CYPRESS_ADMIN_EMAIL
+        config.env.adminEmail = process.env.CYPRESS_ADMIN_EMAIL;
       if (process.env.CYPRESS_ADMIN_PASSWORD)
-        config.env.adminPassword = process.env.CYPRESS_ADMIN_PASSWORD
+        config.env.adminPassword = process.env.CYPRESS_ADMIN_PASSWORD;
 
-      const phoneStatePath = path.join(process.cwd(), 'cypress', 'e2e-phone-state.json')
-      const PHONE_START = 670000000
+      const phoneStatePath = path.join(
+        process.cwd(),
+        "cypress",
+        "e2e-phone-state.json"
+      );
+      const PHONE_START = 670000000;
 
-      on('task', {
+      on("task", {
         /** Returns next unused national phone number (e.g. 670000001) and persists it in cypress/e2e-phone-state.json. */
         getNextTestPhone(): string {
-          let lastUsed = PHONE_START - 1
+          let lastUsed = PHONE_START - 1;
           try {
-            const raw = fs.readFileSync(phoneStatePath, 'utf-8')
-            const data = JSON.parse(raw) as { lastUsed?: number }
-            if (typeof data?.lastUsed === 'number') lastUsed = data.lastUsed
+            const raw = fs.readFileSync(phoneStatePath, "utf-8");
+            const data = JSON.parse(raw) as { lastUsed?: number };
+            if (typeof data?.lastUsed === "number") lastUsed = data.lastUsed;
           } catch {
             // file missing or invalid: start from PHONE_START
           }
-          const next = lastUsed + 1
-          fs.writeFileSync(phoneStatePath, JSON.stringify({ lastUsed: next }, null, 2), 'utf-8')
-          return String(next)
+          const next = lastUsed + 1;
+          fs.writeFileSync(
+            phoneStatePath,
+            JSON.stringify({ lastUsed: next }, null, 2),
+            "utf-8"
+          );
+          return String(next);
         },
 
         async getOtpByRequestId({ requestId }: { requestId: string }) {
-          const apiBase = process.env.CYPRESS_API_BASE_URL || config.env?.apiBaseUrl
-          const adminEmail = process.env.CYPRESS_ADMIN_EMAIL || config.env?.adminEmail
-          const adminPassword = process.env.CYPRESS_ADMIN_PASSWORD || config.env?.adminPassword
+          const apiBase =
+            process.env.CYPRESS_API_BASE_URL || config.env?.apiBaseUrl;
+          const adminEmail =
+            process.env.CYPRESS_ADMIN_EMAIL || config.env?.adminEmail;
+          const adminPassword =
+            process.env.CYPRESS_ADMIN_PASSWORD || config.env?.adminPassword;
           if (!apiBase || !adminEmail || !adminPassword) {
             throw new Error(
-              'Missing CYPRESS_API_BASE_URL, CYPRESS_ADMIN_EMAIL, or CYPRESS_ADMIN_PASSWORD'
-            )
+              "Missing CYPRESS_API_BASE_URL, CYPRESS_ADMIN_EMAIL, or CYPRESS_ADMIN_PASSWORD"
+            );
           }
-          const base = apiBase.replace(/\/$/, '')
-          let authRes: Response
+          const base = apiBase.replace(/\/$/, "");
+          let authRes: Response;
           try {
             authRes = await fetch(`${base}/v2/api/public/users/authenticate`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
                 authFactors: [
                   {
-                    type: 'FACTOR_TYPE_EMAIL_PASSWORD',
+                    type: "FACTOR_TYPE_EMAIL_PASSWORD",
                     id: adminEmail,
                     secretValue: adminPassword,
                   },
                 ],
               }),
-            })
+            });
           } catch (err) {
-            const msg = formatFetchError(err, base, 'auth')
-            throw new Error(msg)
+            const msg = formatFetchError(err, base, "auth");
+            throw new Error(msg);
           }
           if (!authRes.ok) {
-            const text = await authRes.text()
-            throw new Error(`Admin login failed: ${authRes.status} ${text}`)
+            const text = await authRes.text();
+            throw new Error(`Admin login failed: ${authRes.status} ${text}`);
           }
-          const auth = (await authRes.json()) as { userId?: string; tokens?: { accessToken?: string } }
-          const userId = auth?.userId
-          const token = auth?.tokens?.accessToken
+          const auth = (await authRes.json()) as {
+            userId?: string;
+            tokens?: { accessToken?: string };
+          };
+          const userId = auth?.userId;
+          const token = auth?.tokens?.accessToken;
           if (!userId || !token) {
-            throw new Error('Admin authenticate did not return userId or accessToken')
+            throw new Error(
+              "Admin authenticate did not return userId or accessToken"
+            );
           }
-          let otpRes: Response
+          let otpRes: Response;
           try {
             otpRes = await fetch(
-              `${base}/v2/api/admin/user/${encodeURIComponent(userId)}/users/get-otp-by-request-id/${encodeURIComponent(requestId)}`,
+              `${base}/v2/api/admin/user/${encodeURIComponent(
+                userId
+              )}/users/get-otp-by-request-id/${encodeURIComponent(requestId)}`,
               {
-                method: 'GET',
+                method: "GET",
                 headers: { Authorization: `Bearer ${token}` },
               }
-            )
+            );
           } catch (err) {
-            const msg = formatFetchError(err, base, 'get-otp')
-            throw new Error(msg)
+            const msg = formatFetchError(err, base, "get-otp");
+            throw new Error(msg);
           }
           if (!otpRes.ok) {
-            const text = await otpRes.text()
-            throw new Error(`Get OTP failed: ${otpRes.status} ${text}`)
+            const text = await otpRes.text();
+            throw new Error(`Get OTP failed: ${otpRes.status} ${text}`);
           }
-          const otpData = (await otpRes.json()) as { secretValue?: string }
-          const otp = otpData?.secretValue
+          const otpData = (await otpRes.json()) as { secretValue?: string };
+          const otp = otpData?.secretValue;
           if (!otp) {
-            throw new Error('Get OTP response did not contain secretValue')
+            throw new Error("Get OTP response did not contain secretValue");
           }
-          return { otp }
+          return { otp };
         },
 
         /**
@@ -233,70 +285,94 @@ export default defineConfig({
           accessToken,
           email,
         }: {
-          userId: string
-          accessToken: string
-          email: string
+          userId: string;
+          accessToken: string;
+          email: string;
         }) {
-          const apiBase = process.env.CYPRESS_API_BASE_URL || config.env?.apiBaseUrl
+          const apiBase =
+            process.env.CYPRESS_API_BASE_URL || config.env?.apiBaseUrl;
           if (!apiBase) {
-            throw new Error('Missing CYPRESS_API_BASE_URL for setTestUserEmail')
+            throw new Error(
+              "Missing CYPRESS_API_BASE_URL for setTestUserEmail"
+            );
           }
-          const base = apiBase.replace(/\/$/, '')
+          const base = apiBase.replace(/\/$/, "");
           const res = await fetch(
-            `${base}/v2/api/client/users/${encodeURIComponent(userId)}/complete-profile`,
+            `${base}/v2/api/client/users/${encodeURIComponent(
+              userId
+            )}/complete-profile`,
             {
-              method: 'PUT',
+              method: "PUT",
               headers: {
-                'Content-Type': 'application/json',
+                "Content-Type": "application/json",
                 Authorization: `Bearer ${accessToken}`,
               },
               body: JSON.stringify({ email }),
             }
-          )
+          );
           if (!res.ok) {
-            const text = await res.text()
-            throw new Error(`Complete profile failed: ${res.status} ${text}`)
+            const text = await res.text();
+            throw new Error(`Complete profile failed: ${res.status} ${text}`);
           }
-          return { ok: true }
+          return { ok: true };
         },
 
         /** Write performance report (requests + time per screen) to cypress/reports/ and return the report path. */
         writePerformanceReport(payload: {
-          requests: Array<{ url: string; method: string; duration: number; status: number }>
-          screenTimes: Array<{ screen: string; timestamp: number }>
+          requests: Array<{
+            url: string;
+            method: string;
+            duration: number;
+            status: number;
+          }>;
+          screenTimes: Array<{ screen: string; timestamp: number }>;
         }): string {
-          const reportsDir = path.join(process.cwd(), 'cypress', 'reports')
-          if (!fs.existsSync(reportsDir)) fs.mkdirSync(reportsDir, { recursive: true })
-          const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)
-          const jsonPath = path.join(reportsDir, `performance-${ts}.json`)
+          const reportsDir = path.join(process.cwd(), "cypress", "reports");
+          if (!fs.existsSync(reportsDir))
+            fs.mkdirSync(reportsDir, { recursive: true });
+          const ts = new Date()
+            .toISOString()
+            .replace(/[:.]/g, "-")
+            .slice(0, 19);
+          const jsonPath = path.join(reportsDir, `performance-${ts}.json`);
 
-          const { requests, screenTimes } = payload
-          const sorted = [...screenTimes].sort((a, b) => a.timestamp - b.timestamp)
-          const screenDurations: Array<{ screen: string; durationMs: number }> = []
+          const { requests, screenTimes } = payload;
+          const sorted = [...screenTimes].sort(
+            (a, b) => a.timestamp - b.timestamp
+          );
+          const screenDurations: Array<{ screen: string; durationMs: number }> =
+            [];
           for (let i = 0; i < sorted.length - 1; i++) {
             screenDurations.push({
               screen: sorted[i].screen,
               durationMs: sorted[i + 1].timestamp - sorted[i].timestamp,
-            })
+            });
           }
 
           const report = {
             generatedAt: new Date().toISOString(),
             requests: requests.map((r) => ({
               ...r,
-              label: r.url.length > 60 ? r.url.slice(0, 57) + '...' : r.url,
+              label: r.url.length > 60 ? r.url.slice(0, 57) + "..." : r.url,
             })),
             screenDurations,
-          }
-          fs.writeFileSync(jsonPath, JSON.stringify(report, null, 2), 'utf-8')
+          };
+          fs.writeFileSync(jsonPath, JSON.stringify(report, null, 2), "utf-8");
 
-          const html = buildPerformanceHtml(report)
-          const htmlPath = path.join(reportsDir, `performance-${ts}.html`)
-          fs.writeFileSync(htmlPath, html, 'utf-8')
-          return htmlPath
+          const html = buildPerformanceHtml(report);
+          const htmlPath = path.join(reportsDir, `performance-${ts}.html`);
+          fs.writeFileSync(htmlPath, html, "utf-8");
+          return htmlPath;
         },
-      })
-      return config
+      });
+      return config;
     },
   },
-})
+
+  component: {
+    devServer: {
+      framework: "next",
+      bundler: "webpack",
+    },
+  },
+});

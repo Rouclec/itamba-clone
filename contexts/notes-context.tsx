@@ -80,15 +80,6 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
     null,
   );
 
-  const listQueryKey = useMemo(
-    () =>
-      annotationServiceListsUsersNotesQueryKey({
-        path: { userId: userId ?? "" },
-        query: { page: "1" },
-      }),
-    [userId],
-  );
-
   /** Invalidate all user notes list queries (including useRestrictions' count query). */
   const invalidateAllNotesQueries = useCallback(() => {
     queryClient.invalidateQueries({
@@ -273,7 +264,7 @@ export function useNotesQuery() {
   const query = useQuery({
     ...annotationServiceListsUsersNotesOptions({
       path: { userId: userId ?? "" },
-      query: { page: "1" },
+      query: { page: "1", pageSize: "100000" },
     }),
     enabled: !!userId,
     staleTime: 45 * 1000,

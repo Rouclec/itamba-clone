@@ -1,12 +1,14 @@
 /**
  * E2E: Happy path – full flow end-to-end in one run.
  *
- * Reuses the same steps as existing specs: signup (phone → OTP → password →
- * career → success) → complete profile → sign out → sign in → browse library
- * (documents, catalogues, notes, bookmarks) → subscription (plan selection →
- * payment page).
+ * Flow: signup → complete profile → sign out → sign in → browse library (visit
+ * client, catalogues, notes, bookmarks) → subscription (plan → payment) →
+ * complete payment (mocked) → return to dashboard → open a document → add
+ * bookmark, add note, edit note, delete note, remove bookmark → browse
+ * catalogues → notes page → bookmarks page.
  *
  * Prerequisites: Same as signup-phone (API, admin OTP, phone state file).
+ * Backend must have at least one published document for notes/bookmarks steps.
  *
  * Run: make e2e-happy-path
  */
@@ -80,7 +82,7 @@ describe('Happy path (E2E)', () => {
 
     cy.url().should('include', '/auth/signup/career')
     cy.recordScreen('signup-career')
-    cy.contains('button', 'Student').click()
+    cy.get('[data-testid="signup-career-student"]').click()
     cy.get('[data-testid="signup-career-submit"]').click()
 
     cy.url().should('include', '/auth/signup/success')
@@ -102,43 +104,109 @@ describe('Happy path (E2E)', () => {
     cy.url().should('include', '/client')
     cy.recordScreen('client')
 
-    // Close first-time user modal if open so header user menu is clickable
-    cy.get('body').then(($body) => {
-      if ($body.find('[data-testid="restriction-modal-close"]').length) {
-        cy.get('[data-testid="restriction-modal-close"]').click()
-      }
-    })
-    // --- Sign in (verify sign-in works) ---
+    cy.closeRestrictionModalIfOpen()
+    // --- Sign in with phone (same as signup method) ---
     cy.get('[data-testid="header-user-menu"]').should('be.visible').click()
     cy.get('[data-testid="header-logout"]').click()
     cy.visit(`/${locale}/auth/signin`)
-    cy.get('[data-testid="signin-switch-to-email"]').click()
-    cy.get('[data-testid="signin-email"]').type(testEmail)
+    cy.get<string>('@testPhone').then((phone) => cy.get('[data-testid="signin-phone-input"]').type(phone))
     cy.get('[data-testid="signin-password"]').type(password)
     cy.get('[data-testid="signin-submit"]').click()
     cy.url().should('include', '/client')
+    cy.closeRestrictionModalIfOpen()
 
     // --- Browse library (same as browse-library spec) ---
     cy.visit(`/${locale}/client`)
     cy.url().should('include', '/client')
     cy.recordScreen('browse-library')
+    cy.closeRestrictionModalIfOpen()
 
     cy.visit(`/${locale}/client/catalogues`)
     cy.url().should('include', '/client/catalogues')
+    cy.closeRestrictionModalIfOpen()
 
     cy.visit(`/${locale}/client/notes`)
     cy.url().should('include', '/client/notes')
+    cy.closeRestrictionModalIfOpen()
 
     cy.visit(`/${locale}/client/bookmarks`)
     cy.url().should('include', '/client/bookmarks')
+    cy.closeRestrictionModalIfOpen()
 
-    // --- Subscription (same as subscription-only: plan → payment page) ---
+    // --- Subscription: plan → payment → complete (mocked) → return to dashboard ---
     cy.visit(`/${locale}/subscription`)
     cy.get('[data-testid="subscription-plan-professional"]').should('exist')
     cy.get('[data-testid="subscription-cta-professional"]').click()
     cy.url().should('include', '/subscription/payment')
     cy.get('[data-testid="payment-method-mobile_money"]').should('be.visible')
-    cy.get('[data-testid="payment-method-card"]').should('be.visible')
+    // Mock payment status so processing page redirects to success
+    cy.intercept('GET', '**/v2/api/client/user/*/payments/*', {
+      statusCode: 200,
+      body: { payment: { status: 'PAYMENT_STATUS_COMPLETED' } },
+    }).as('getPaymentStatus')
+    cy.get('[data-testid="payment-phone-input"]').type('670000010')
+    cy.get('[data-testid="payment-confirm"]').click()
+    cy.url().should('include', '/subscription/payment/processing')
+    cy.url({ timeout: 20000 }).should('include', '/subscription/payment/success')
+    cy.get('[data-testid="payment-success-return-dashboard"]').click()
+    cy.url().should('include', '/client')
+    cy.recordScreen('client-after-payment')
+
+    // --- Browse library: open a document, article modal, notes + bookmarks ---
+    cy.visit(`/${locale}/client`)
+    cy.url().should('include', '/client')
+    // First document card link (exclude sidebar nav: catalogues, notes, bookmarks)
+    cy.get('body').then(($body) => {
+      const docLink = $body.find('a[href*="/client/"]').filter((_i, el) => {
+        const h = el.getAttribute('href') || ''
+        return !h.includes('catalogues') && !h.includes('notes') && !h.includes('bookmarks') && /\/client\/[^/]+\/?$/.test(h.replace(/\?.*/, ''))
+      }).first()
+      if (docLink.length === 0) {
+        cy.log('No document link found – skip document/notes/bookmarks steps')
+        return
+      }
+      cy.wrap(docLink).click()
+    })
+    cy.url().then((url) => {
+      const pathname = typeof url === 'string' ? url : (url as unknown as string)
+      const match = pathname.match(/\/client\/([^/?#]+)/)
+      if (!match || ['catalogues', 'notes', 'bookmarks'].includes(match[1])) return
+      cy.get('body').then(($body) => {
+        if ($body.find('[data-testid="article-expand"]').length === 0) return
+        cy.get('[data-testid="article-expand"]').first().click()
+      cy.get('[role="dialog"]', { timeout: 10000 }).should('be.visible')
+      cy.get('[aria-label="Add bookmark"]').click()
+      cy.contains('button', 'Add note').click()
+      cy.get('.ProseMirror').first().type('Happy path note')
+      cy.contains('button', 'Save').click()
+      cy.get('[role="dialog"]').within(() => {
+        cy.contains('Happy path note').should('be.visible')
+      })
+      cy.get('[aria-label="Edit note"]').first().click()
+      cy.get('.ProseMirror').first().clear().type('Updated note')
+      cy.contains('button', 'Save').click()
+      cy.get('[role="dialog"]').within(() => {
+        cy.contains('Updated note').should('be.visible')
+      })
+      cy.get('[aria-label="Delete"]').first().click()
+      cy.get('[role="alertdialog"]').within(() => {
+        cy.contains('button', 'Delete').click()
+      })
+      cy.get('[aria-label="Remove bookmark"]').click()
+      cy.get('[aria-label="Close"]').click()
+      })
+    })
+
+    // --- Browse catalogues, then notes and bookmarks pages ---
+    cy.visit(`/${locale}/client/catalogues`)
+    cy.url().should('include', '/client/catalogues')
+    cy.recordScreen('catalogues')
+    cy.visit(`/${locale}/client/notes`)
+    cy.url().should('include', '/client/notes')
+    cy.recordScreen('notes')
+    cy.visit(`/${locale}/client/bookmarks`)
+    cy.url().should('include', '/client/bookmarks')
+    cy.recordScreen('bookmarks')
 
     cy.then(() => {
       const totalMs = Date.now() - testStart

@@ -1,0 +1,31 @@
+# Dependencies and build output (rebuilt in image)
+node_modules
+.next
+out
+
+# Git and IDE
+.git
+.gitignore
+.cursor
+
+# Env and secrets (use .env.example only)
+.env
+.env.*
+!.env.example
+
+# Tests and tooling
+cypress
+*.cy.ts
+*.spec.*
+.coverage
+.nyc_output
+
+# Docs and misc
+README.md
+docs
+*.md
+!scripts/*.md
+
+# Docker
+Dockerfile*
+.dockerignore

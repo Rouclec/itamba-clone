@@ -101,7 +101,7 @@ describe('Signup with phone number', () => {
     cy.recordScreen('signup-career')
 
     // --- Step 4: Career ---
-    cy.contains('button', 'Student').click()
+    cy.get('[data-testid="signup-career-student"]').click()
     cy.get('[data-testid="signup-career-submit"]').click()
 
     // --- Success ---
@@ -128,19 +128,13 @@ describe('Signup with phone number', () => {
     cy.url().should('include', '/client')
     cy.recordScreen('client')
 
-    // Close first-time user modal if open (pointer-events: none on body otherwise blocks header click)
-    cy.get('body').then(($body) => {
-      if ($body.find('[data-testid="restriction-modal-close"]').length) {
-        cy.get('[data-testid="restriction-modal-close"]').click()
-      }
-    })
-    // Sign in immediately after signup to ensure sign-in flow works
-    cy.get('[data-testid="header-user-menu"]').should('be.visible').click()
+    cy.closeRestrictionModalIfOpen()
+    // Sign in with phone (same as signup method) to ensure sign-in flow works
+    cy.get('[data-testid="header-user-menu"]').click()
     cy.get('[data-testid="header-logout"]').click()
     cy.url().should('satisfy', (url: string) => url.includes('/auth/signin') || url.includes('/auth/signup'))
     cy.visit(`/${locale}/auth/signin`)
-    cy.get('[data-testid="signin-switch-to-email"]').click()
-    cy.get('[data-testid="signin-email"]').type(testEmail)
+    cy.get<string>('@testPhone').then((phone) => cy.get('[data-testid="signin-phone-input"]').type(phone))
     cy.get('[data-testid="signin-password"]').type(password)
     cy.get('[data-testid="signin-submit"]').click()
     cy.url().should('include', '/client')

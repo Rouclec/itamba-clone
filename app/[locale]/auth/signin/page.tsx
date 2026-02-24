@@ -191,6 +191,7 @@ export default function SignInPage() {
               onBlur={() => phone && validatePhone(phone)}
               error={phoneError || undefined}
               required
+              data-testid="signin-phone-input"
             />
           </>
         ) : (
