@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Search, LayoutGrid, List } from "lucide-react";
@@ -60,6 +60,7 @@ import {
 import { formatDocumentDate } from "@/utils/date";
 
 const PAGE_SIZE = 9;
+const SEARCH_DEBOUNCE_MS = 2000;
 
 const DECADES = [
   { label: "1950s", start: 1950, end: 1959 },
@@ -288,6 +289,7 @@ export function LibraryPageContent() {
 
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
+  const [searchDebounced, setSearchDebounced] = useState("");
   const [selectedCatalogueId, setSelectedCatalogueId] = useState<string>("all");
 
   const catalogueIdFromUrl = searchParams.get("catalogueId");
@@ -297,6 +299,18 @@ export function LibraryPageContent() {
       setPage(1);
     }
   }, [catalogueIdFromUrl]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setSearchDebounced(search);
+    }, SEARCH_DEBOUNCE_MS);
+    return () => window.clearTimeout(timer);
+  }, [search]);
+
+  const handleSearchChange = useCallback((value: string) => {
+    setSearch(value);
+    setPage(1);
+  }, []);
   const [selectedDocumentTypeId, setSelectedDocumentTypeId] =
     useState<string>("all");
   const [selectedDecade, setSelectedDecade] = useState<{
@@ -361,7 +375,7 @@ export function LibraryPageContent() {
           }),
           page: page.toString(),
           pageSize: PAGE_SIZE.toString(),
-          searchKey: search,
+          searchKey: searchDebounced,
           sortBy: sortByTitle,
           sortOrder: "SORT_ORDER_UNSPECIFIED",
         },
@@ -373,7 +387,7 @@ export function LibraryPageContent() {
       issueDateFrom,
       issueDateTo,
       page,
-      search,
+      searchDebounced,
       sortByTitle,
     ],
   );
@@ -468,7 +482,7 @@ export function LibraryPageContent() {
             <Input
               placeholder={t("client.searchPlaceholder")}
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => handleSearchChange(e.target.value)}
               className="pl-9 border-border placeholder:text-inactive-text"
             />
           </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Search, LayoutGrid, List, ArrowLeft } from "lucide-react";
@@ -45,6 +45,7 @@ import {
 } from "@/components/restriction-modal";
 
 const PAGE_SIZE = 9;
+const SEARCH_DEBOUNCE_MS = 2000;
 
 function getPaginationSlots(
   page: number,
@@ -95,8 +96,19 @@ export function CatalogueDocumentsPageContent({
   const isMobile = useIsMobile();
   const [view, setView] = useState<"grid" | "list">("grid");
   const [search, setSearch] = useState("");
+  const [searchDebounced, setSearchDebounced] = useState("");
   const [page, setPage] = useState(1);
   const [showDocumentsRestriction, setShowDocumentsRestriction] = useState(false);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setSearchDebounced(search), SEARCH_DEBOUNCE_MS);
+    return () => window.clearTimeout(timer);
+  }, [search]);
+
+  const handleSearchChange = useCallback((value: string) => {
+    setSearch(value);
+    setPage(1);
+  }, []);
 
   const sortByTitle = locale.startsWith("fr") ? "SORT_BY_TITLE_FR" : "SORT_BY_TITLE_EN";
 
@@ -131,7 +143,7 @@ export function CatalogueDocumentsPageContent({
           catalogueId,
           page: page.toString(),
           pageSize: effectivePageSize.toString(),
-          searchKey: search,
+          searchKey: searchDebounced,
           sortBy: sortByTitle,
           sortOrder: "SORT_ORDER_UNSPECIFIED",
         },
@@ -141,7 +153,7 @@ export function CatalogueDocumentsPageContent({
       catalogueId,
       page,
       effectivePageSize,
-      search,
+      searchDebounced,
       sortByTitle,
     ],
   );
@@ -251,10 +263,7 @@ export function CatalogueDocumentsPageContent({
             <Input
               placeholder={t("client.searchPlaceholder")}
               value={search}
-              onChange={(e) => {
-                setSearch(e.target.value);
-                setPage(1);
-              }}
+              onChange={(e) => handleSearchChange(e.target.value)}
               className="pl-9 border-border placeholder:text-inactive-text"
             />
           </div>

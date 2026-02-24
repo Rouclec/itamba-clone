@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Search, LayoutGrid, List } from "lucide-react";
@@ -38,6 +38,7 @@ import {
 } from "@/components/restriction-modal";
 
 const PAGE_SIZE = 9;
+const SEARCH_DEBOUNCE_MS = 2000;
 
 /**
  * Pagination slots: numbers and ellipsis.
@@ -203,9 +204,20 @@ export function CataloguesPageContent() {
   const isMobile = useIsMobile();
   const [view, setView] = useState<"grid" | "list">("grid");
   const [search, setSearch] = useState("");
+  const [searchDebounced, setSearchDebounced] = useState("");
   const [page, setPage] = useState(1);
   const [showCataloguesRestriction, setShowCataloguesRestriction] =
     useState(false);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setSearchDebounced(search), SEARCH_DEBOUNCE_MS);
+    return () => window.clearTimeout(timer);
+  }, [search]);
+
+  const handleSearchChange = useCallback((value: string) => {
+    setSearch(value);
+    setPage(1);
+  }, []);
 
   const sortByTitle = locale.startsWith("fr")
     ? "SORT_BY_TITLE_FR"
@@ -221,12 +233,12 @@ export function CataloguesPageContent() {
         query: {
           page: page.toString(),
           pageSize: pageSize.toString(),
-          searchKey: search,
+          searchKey: searchDebounced,
           sortBy: sortByTitle,
           sortOrder: "ASC",
         },
       }),
-    [currentUser?.userId, page, pageSize, search, sortByTitle],
+    [currentUser?.userId, page, pageSize, searchDebounced, sortByTitle],
   );
 
   const { data: listData, isLoading } = useQuery({
@@ -320,10 +332,7 @@ export function CataloguesPageContent() {
             <Input
               placeholder={t("client.cataloguesSearchPlaceholder")}
               value={search}
-              onChange={(e) => {
-                setSearch(e.target.value);
-                setPage(1);
-              }}
+              onChange={(e) => handleSearchChange(e.target.value)}
               className="pl-9 border-border placeholder:text-inactive-text"
             />
           </div>
